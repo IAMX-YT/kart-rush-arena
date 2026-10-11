@@ -5,6 +5,10 @@
   "expiresAt": "2026-10-11T23:38:23.283Z",
   "commandId": "cmd_2a2fe2cef2f14c2f8fc87f24e530",
   "projectId": "prj_hjedWVWN9lnyocpRHel43VJhuDuG",
+  "frontend": "https://rushroom-games.vercel.app",
+  "frontendDeploymentId": "dpl_7r93XfqWugYUf72M3ajAqsaPAJtE",
+  "sourceCommit": "87a692b",
+  "verification": {"publicWebSocket": true, "roomCreate": true, "phoneJoin": true, "gameStart": true, "reloadResume": true, "controllerOnly": true, "browserErrors": 0},
   "health": {
     "ok": true,
     "mode": "online",
