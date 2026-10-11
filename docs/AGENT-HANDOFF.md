@@ -23,7 +23,7 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 
 - Vercel project ID: `prj_hjedWVWN9lnyocpRHel43VJhuDuG`; project name changed to `rushroom`.
 - Vercel team ID: `team_lenG4YXQluvhvjs9yZZ4zUng`.
-- Public Rushroom alias: **https://rushroom-games.vercel.app**. Domain assignment is verified; HTTP 200 checked on October 12. It points to the existing production deployment, not a new deployment of active working files.
+- Preferred public Rushroom alias: **https://rushroom-split.vercel.app**. The user requested a split-related name; domain assignment and HTTP 200 were verified on October 12. The previous `rushroom-games.vercel.app` alias remains attached. Both point to the existing production deployment, not a new deployment of active working files.
 - `rushroom.vercel.app` was rejected by Vercel because another project already owns it.
 - Existing `kart-rush-arena.vercel.app` alias remains available. Git integration was absent in the Vercel project when checked; a GitHub push alone must not be described as a completed deployment.
 - The observed public page title remains `Rushroom — Kart Rush Arena`; branding commit `9a8632f` requires a future frontend deployment.
@@ -41,3 +41,7 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 6. Use temporary credentials only in session memory/stdin or child-process environment. Never save tokens in source, docs, remote URLs, commit messages or handoff files.
 
 At the final status check, active edits also appeared in `src/client/main.tsx` and `src/client/style.css` in addition to `src/client/washScene.tsx`. They were left unstaged and unchanged by the branding/handoff agent.
+
+## Latest naming handoff
+
+The preferred public URL is `https://rushroom-split.vercel.app/`. `index.html` now defines `Rushroom | Split-Screen Multiplayer Games`, a browser multiplayer / phone-controller description, a canonical URL and Open Graph / Twitter sharing metadata. These metadata changes are source changes awaiting the next coordinated frontend deployment; the domain itself is already live. Do not claim that the live title changed until that deployment is verified. Keep the new frontend origin in backend CORS/origin configuration when restoring the server.
