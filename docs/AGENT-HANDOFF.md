@@ -23,7 +23,7 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 
 - Vercel project ID: `prj_hjedWVWN9lnyocpRHel43VJhuDuG`; project name changed to `rushroom`.
 - Vercel team ID: `team_lenG4YXQluvhvjs9yZZ4zUng`.
-- Preferred public Rushroom alias: **https://rushroom-split.vercel.app**. The user requested a split-related name; domain assignment and HTTP 200 were verified on October 12. Attached aliases: `rushroom-split.vercel.app`, `rushroom-games.vercel.app`.
+- Main public Rushroom URL: **https://rushroom-games.vercel.app**. The user's latest instruction chooses this as the main URL and retires `rushroom-split.vercel.app`. Keep only the games domain attached; do not reattach either retired domain during deployments.
 - `rushroom.vercel.app` was rejected by Vercel because another project already owns it.
 - At the user's request, `kart-rush-arena.vercel.app` was removed from the project on October 12. Its alias lookup now returns 404; a fresh public request returns 404 `DEPLOYMENT_NOT_FOUND`. The new Rushroom URL still returns HTTP 200. Do not reattach the retired domain during deployments.
 - Production alias targets deployment `dpl_H7U39He35YNV9REDxC6Hw6ycyWey` (built from commit `4b0f2f2`).
@@ -45,4 +45,4 @@ At the final status check, active edits also appeared in `src/client/main.tsx` a
 
 ## Latest naming handoff
 
-The preferred public URL is `https://rushroom-split.vercel.app/`. `index.html` defines `Rushroom | Split-Screen Multiplayer Games`, a browser multiplayer / phone-controller description, a canonical URL and Open Graph / Twitter sharing metadata. The second agent's production deployment recorded above includes these metadata changes. Keep the new frontend origin in backend CORS/origin configuration when restoring the server. The old `kart-rush-arena.vercel.app` URL is retired by user request.
+The main public URL is `https://rushroom-games.vercel.app/`. `index.html` keeps the title `Rushroom | Split-Screen Multiplayer Games`; canonical and Open Graph URLs now point to the games domain. Keep this frontend origin in backend CORS/origin configuration when restoring the server. Both `kart-rush-arena.vercel.app` and `rushroom-split.vercel.app` are retired by user request.

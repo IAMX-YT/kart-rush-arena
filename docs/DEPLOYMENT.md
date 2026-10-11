@@ -1,8 +1,8 @@
 # Temporary Vercel test deployment — October 11, 2026
 
-October 12 naming update: the Vercel project is now `rushroom`; the preferred verified public alias is https://rushroom-split.vercel.app. The earlier https://rushroom-games.vercel.app alias remains attached. They route to the existing production deployment. `rushroom.vercel.app` is assigned to another project. These alias changes do not refresh the temporary backend or deploy newer source commits. See [AGENT-HANDOFF.md](AGENT-HANDOFF.md) for shared agent and deployment status.
+October 12 naming update: the Vercel project is now `rushroom`; the main public URL is https://rushroom-games.vercel.app. The user retired both `rushroom-split.vercel.app` and `kart-rush-arena.vercel.app`; do not reattach them. `rushroom.vercel.app` is assigned to another project. Domain changes do not refresh the temporary backend. See [AGENT-HANDOFF.md](AGENT-HANDOFF.md) for current source/deployment status.
 
-Current frontend: https://rushroom-split.vercel.app
+Current frontend: https://rushroom-games.vercel.app
 
 Retired frontend: `kart-rush-arena.vercel.app` was removed on October 12 at the user's request; fresh requests return HTTP 404. Do not reattach it. The historical verification URLs below describe earlier tests.
 
