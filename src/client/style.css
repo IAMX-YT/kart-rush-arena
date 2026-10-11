@@ -944,6 +944,16 @@
 .kart-touch-button.gas {background:#f0c477;color:#17382d}
 .kart-touch-button.drift,.kart-touch-button.item,.kart-touch-button.respawn {grid-column:span 2;min-height:44px;font-size:12px}
 .kart-touch-button.held {background:#508964;color:#fff;transform:translateY(2px)}
+@media(max-width:600px){
+ .race-screen:has(.mobile-wash-overlay) .sonar-action-btn {display:none}
+ .race-screen:has(.mobile-wash-overlay) .nozzle-dock {top:170px;bottom:auto;right:12px;padding:8px;max-width:190px}
+ .race-screen:has(.mobile-wash-overlay) .objects-hud-list {display:none}
+ .race-screen:has(.wash-canvas) .wash-title-card {max-width:180px;padding:10px}
+ .race-screen:has(.wash-canvas) .wash-title-card h2 {font-size:12px}
+ .race-screen:has(.wash-canvas) .race-tools {max-width:150px;flex-wrap:wrap;gap:5px}
+ .race-screen:has(.wash-canvas) .race-tools button {min-height:40px;padding:8px;font-size:10px}
+ .mobile-btn-spray {width:112px;height:112px;font-size:18px}
+}
 @media(orientation:landscape) and (max-height:550px){.kart-touch-controls{grid-template-columns:repeat(7,minmax(0,1fr))}.kart-touch-button,.kart-touch-button.drift,.kart-touch-button.item,.kart-touch-button.respawn {grid-column:span 1;min-height:70px;font-size:12px}}
 @media (max-width: 800px) {
   .arrangement-grid {

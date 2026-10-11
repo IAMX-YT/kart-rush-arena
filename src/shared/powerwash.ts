@@ -9,6 +9,7 @@ export interface CleanableDef {
 }
 
 export const CLEANABLE_OBJECTS: CleanableDef[] = [
+  {id:'car',name:'Classic Roadster',gridX:40,gridY:24,center:[0,1,-1],size:[4.4,2,2.2]},
   { id: 'patio', name: 'Courtyard Patio', gridX: 32, gridY: 32, center: [0, 0, 0], size: [16, 0.2, 16] },
   { id: 'bench', name: 'Garden Bench', gridX: 16, gridY: 16, center: [3.5, 0.6, -3], size: [2.4, 1.2, 1.2] },
   { id: 'bicycle', name: 'Vintage Bicycle', gridX: 16, gridY: 16, center: [-3.8, 0.8, -2], size: [2.0, 1.4, 0.8] },
@@ -119,10 +120,10 @@ export function createPowerWashMatch(players: { id: string; name: string; color:
 
   // Spawn points around the patio
   const spawnPoints = [
-    { x: 0, z: 4.5, yaw: Math.PI },
-    { x: -2.5, z: 4.0, yaw: Math.PI * 0.9 },
-    { x: 2.5, z: 4.0, yaw: Math.PI * 1.1 },
-    { x: 0, z: -4.5, yaw: 0 },
+    { x: 3.6, z: 4.5, yaw: Math.atan2(3.6,5.5) },
+    { x: -2.5, z: 4.0, yaw: -0.15 },
+    { x: 2.5, z: 4.0, yaw: 0.15 },
+    { x: 0, z: -4.5, yaw: Math.PI },
   ];
 
   const washPlayers: WashPlayerState[] = players.map((p, i) => {
@@ -341,7 +342,7 @@ export function stepPowerWash(
 
   for (const player of match.players) {
     if (!player.connected) continue;
-    const input = inputs.get(player.id) || neutralWashInput();
+    const input = inputs.get(player.id) || {...neutralWashInput(),yaw:player.yaw,pitch:player.pitch,nozzle:player.nozzle};
 
     // Update orientation
     player.yaw = input.yaw;

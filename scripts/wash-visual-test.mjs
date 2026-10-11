@@ -1,0 +1,29 @@
+import {chromium} from '@playwright/test';
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const base=process.env.TEST_URL||'http://localhost:3002';
+const browser=await chromium.launch({channel:'chrome',headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+const errors=[];
+const sentInputs=[];
+try {
+ const context=await browser.newContext({viewport:{width:1440,height:900}});const page=await context.newPage();
+ page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error'&&/shader|WebGL|material|texture/i.test(m.text()))errors.push(m.text());});
+ page.on('response',r=>{if(r.url().includes('/materials/')&&!r.ok())errors.push('Material HTTP '+r.status());});
+ page.on('websocket',ws=>{if(new URL(ws.url()).pathname!=='/ws')return;ws.on('framesent',({payload})=>{try{const m=JSON.parse(String(payload));if(m.type==='wash_input'){sentInputs.push(m.input);if(sentInputs.length>6)sentInputs.shift();}}catch{}});ws.on('framereceived',({payload})=>{try{const m=JSON.parse(String(payload));if(m.type==='state')page.room=m.room;}catch{}});});
+ await page.goto(base+'/?create=power-wash');
+ await page.getByRole('heading',{name:'Start your match.'}).waitFor();assert.equal(page.room,undefined,'Create bypassed host role choice');
+ await page.getByRole('button',{name:'Screen + Controls',exact:false}).click();
+ await page.locator('.panel button.primary').click();await page.getByRole('heading',{name:'Assemble your crew.'}).waitFor();
+ await page.getByRole('button',{name:'Start Game',exact:false}).click();await page.locator('.wash-canvas canvas').waitFor();
+ await page.waitForTimeout(3500);await fs.mkdir('test-results',{recursive:true});
+ await page.screenshot({path:'test-results/wash-realism-dirty.png'});
+ const before=page.room.wash.objects.car.cleanedCells;
+ await page.keyboard.down('Space');await page.waitForTimeout(2800);await page.keyboard.up('Space');
+ if(page.room.wash.objects.car.cleanedCells<=before)console.log(JSON.stringify({player:page.room.wash.players[0],sentInputs}));
+ assert(page.room.wash.objects.car.cleanedCells>before,'Spray did not clean actual car');
+ await page.screenshot({path:'test-results/wash-realism-cleaning.png'});
+ await page.locator('.wash-canvas').screenshot({path:'public/wash-world.png'});
+ assert.deepEqual(errors,[]);
+ console.log(JSON.stringify({passed:true,carCleanedCells:page.room.wash.objects.car.cleanedCells,errors,screenshots:['wash-realism-dirty.png','wash-realism-cleaning.png']}));
+ await page.getByRole('button',{name:/Lobby/}).last().click();
+} finally {await browser.close();}

@@ -15,8 +15,11 @@ async function client(phone=false) {
 }
 async function until(fn,description,timeout=15000) {const start=Date.now();while(!fn()){if(Date.now()-start>timeout)throw Error('Timed out: '+description);await new Promise(r=>setTimeout(r,100));}}
 try {
- const host=await client();await host.goto(base);
+ const host=await client(process.env.TEST_HOST_PHONE==='1');await host.goto(base);
  await host.getByRole('button',{name:'Create a room',exact:false}).first().click();
+ await host.getByRole('heading',{name:'Start your match.'}).waitFor();
+ assert.equal(await host.locator('.panel button.primary').isDisabled(),true,'Host must explicitly choose device role');
+ await host.getByRole('button',{name:'Screen + Controls',exact:false}).click();
  if(!host.roomState) await Promise.race([host.getByRole('button',{name:'Create room',exact:false}).waitFor({timeout:20000}),host.getByRole('heading',{name:'Assemble your crew.'}).waitFor({timeout:20000})]);
  if(!host.roomState) await host.getByRole('button',{name:'Create room',exact:false}).click();
  await until(()=>host.roomState?.code,'host room creation');
@@ -49,6 +52,15 @@ try {
  const hostReady=host.getByRole('button',{name:'Ready to Clean',exact:false});if(await hostReady.count())await hostReady.click();
  await host.getByRole('button',{name:'Start Game',exact:false}).click();
  await until(()=>game==='power-wash'?host.roomState.wash?.phase==='playing':host.roomState.race?.phase==='racing','authoritative game start');
+ if(process.env.TEST_HOST_PHONE==='1'&&game==='power-wash'){
+   await host.bringToFront();
+   await host.locator('canvas').first().waitFor({timeout:30000});await host.locator('.mobile-btn-spray').waitFor();
+   const stick=await host.locator('.mobile-stick-area').boundingBox();const cdp=await host.context().newCDPSession(host);
+   const session=await host.evaluate(()=>JSON.parse(sessionStorage.getItem('rush-session')));const before=host.roomState.wash.players.find(p=>p.id===session.playerId).x;
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:stick.x+stick.width*.8,y:stick.y+stick.height*.5,id:10}]});
+   await until(()=>Math.abs(host.roomState.wash.players.find(p=>p.id===session.playerId).x-before)>.1,'single-phone host joystick movement');
+   await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+ }
  const controllerButton=()=>phone.getByRole('button',{name:game==='power-wash'?/spray/i:'GAS'}).first();
  await controllerButton().waitFor({timeout:20000});
  await both.locator('canvas').first().waitFor({timeout:30000});

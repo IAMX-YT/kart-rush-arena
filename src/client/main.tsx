@@ -41,7 +41,7 @@ function App() {
   } = net;
 
   const params = new URLSearchParams(location.search);
-  const initialPage = params.has('join')
+  const initialPage = params.has('create') ? 'create' : params.has('join')
     ? 'join'
     : params.has('screen')
     ? 'screen'
@@ -51,7 +51,8 @@ function App() {
 
   const [page, setPage] = useState(initialPage);
   const [joinDeviceRole, setJoinDeviceRole] = useState<'screen' | 'controller' | 'player' | null>(null);
-  const [selectedGameId, setSelectedGameId] = useState<'kart-rush' | 'power-wash'>('power-wash');
+  const [hostRoleChosen, setHostRoleChosen] = useState(false);
+  const [selectedGameId, setSelectedGameId] = useState<'kart-rush' | 'power-wash'>(params.get('create') === 'kart-rush' ? 'kart-rush' : 'power-wash');
   const [arrangement, setArrangement] = useState<PlayArrangement>(() => {
     try {const saved=sessionStorage.getItem('rush-host-arrangement');return saved==='tv_display'||saved==='phone_controller'?saved:'this_device';} catch {return 'this_device';}
   });
@@ -65,7 +66,7 @@ function App() {
   const [color, setColor] = useState(COLORS[0]);
   const [qr, setQr] = useState('');
   const [pairQr, setPairQr] = useState('');
-  const [quality, setQuality] = useState('high');
+  const [quality, setQuality] = useState(() => matchMedia('(pointer:coarse)').matches ? 'low' : 'high');
   const [sound, setSound] = useState(false);
 
   // Split-screen state (Independent per display)
@@ -83,6 +84,17 @@ function App() {
   const washControls = useRef<WashInput>(neutralWashInput());
   const keys = useRef(new Set<string>());
   const pointers = useRef(new Map<number, keyof Input>());
+  const movePointer=useRef<number|null>(null);
+  const moveThumb=useRef<HTMLDivElement>(null);
+  const moveTouch=(e:React.PointerEvent<HTMLDivElement>)=>{
+    if(movePointer.current!==e.pointerId)return;
+    const bounds=e.currentTarget.getBoundingClientRect();const radius=bounds.width*.32;
+    const dx=(e.clientX-bounds.x-bounds.width/2)/radius,dy=(e.clientY-bounds.y-bounds.height/2)/radius;const scale=Math.max(1,Math.hypot(dx,dy));
+    washControls.current.moveX=dx/scale;washControls.current.moveZ=-dy/scale;
+    if(moveThumb.current)moveThumb.current.style.transform=`translate(${dx/scale*radius}px,${dy/scale*radius}px)`;
+    setWashInput(washControls.current);
+  };
+  const stopMoveTouch=()=>{movePointer.current=null;washControls.current.moveX=0;washControls.current.moveZ=0;if(moveThumb.current)moveThumb.current.style.transform='translate(0,0)';setWashInput(washControls.current);};
 
   // Last known cleaned object for toast
   const lastCompletedObject = useRef<string | null>(null);
@@ -168,8 +180,10 @@ function App() {
   function resetInputs() {
     document.querySelectorAll('.pad.held').forEach(b => b.classList.remove('held'));
     kartControls.current = neutral();
-    washControls.current = neutralWashInput();
+    const player=room?.wash?.players.find(player=>player.id===session?.playerId);
+    washControls.current = {...neutralWashInput(),yaw:player?.yaw??washControls.current.yaw,pitch:player?.pitch??washControls.current.pitch,nozzle:washControls.current.nozzle};
     pointers.current.clear();
+    movePointer.current=null;if(moveThumb.current)moveThumb.current.style.transform='translate(0,0)';
     keys.current.clear();
     setInput(kartControls.current);
     setWashInput(washControls.current);
@@ -178,6 +192,7 @@ function App() {
   useEffect(() => {
     resetInputs();
   }, [room?.phase, session?.playerId, status]);
+  useEffect(()=>{const player=room?.wash?.players.find(player=>player.id===session?.playerId);if(player){washControls.current={...neutralWashInput(),yaw:player.yaw,pitch:player.pitch};setWashInput(washControls.current);}},[Boolean(room?.wash),session?.playerId]);
 
   // Keyboard controls for both games (PC Arrangement A & Solo Play)
   useEffect(() => {
@@ -336,11 +351,13 @@ function App() {
   }
 
   function handleCreateRoom(gameIdToCreate = selectedGameId) {
-    if (page !== 'create' && (!config || status !== 'Connected')) {
+    if (page !== 'create') {
       setSelectedGameId(gameIdToCreate);
+      setHostRoleChosen(false);
       setPage('create');
       return;
     }
+    if (!hostRoleChosen) return;
     send({
       type: 'create',
       mode: config?.mode || 'online',
@@ -694,27 +711,30 @@ function App() {
           <div className="arrangement-grid">
             <button
               type="button"
-              className={`arrangement-card ${arrangement === 'this_device' ? 'selected' : ''}`}
-              onClick={() => setArrangement('this_device')}
+              className={`arrangement-card ${hostRoleChosen && arrangement === 'this_device' ? 'selected' : ''}`}
+              aria-pressed={hostRoleChosen && arrangement === 'this_device'}
+              onClick={() => {setArrangement('this_device');setHostRoleChosen(true);}}
             >
               <b>Screen + Controls</b>
               <span>Gameplay & controls on this device.</span>
             </button>
             <button
               type="button"
-              className={`arrangement-card ${arrangement === 'tv_display' ? 'selected' : ''}`}
-              onClick={() => setArrangement('tv_display')}
+              className={`arrangement-card ${hostRoleChosen && arrangement === 'tv_display' ? 'selected' : ''}`}
+              aria-pressed={hostRoleChosen && arrangement === 'tv_display'}
+              onClick={() => {setArrangement('tv_display');setHostRoleChosen(true);}}
             >
               <b>Screen only</b>
               <span>Shared display for phone controllers.</span>
             </button>
-            <button type="button" className={`arrangement-card ${arrangement === 'phone_controller' ? 'selected' : ''}`} onClick={() => setArrangement('phone_controller')}>
+            <button type="button" aria-pressed={hostRoleChosen && arrangement === 'phone_controller'} className={`arrangement-card ${hostRoleChosen && arrangement === 'phone_controller' ? 'selected' : ''}`} onClick={() => {setArrangement('phone_controller');setHostRoleChosen(true);}}>
               <b>Controller only</b><span>Big controls here. Show gameplay on another screen.</span>
             </button>
           </div>
 
           <button
             className="primary full"
+            disabled={!hostRoleChosen}
             onClick={() => handleCreateRoom(selectedGameId)}
           >
             {status === 'Connected' ? 'Create room ↗' : 'Connecting to Server…'}
@@ -979,9 +999,9 @@ function App() {
                       setTargetedObject({ name, percent: pct });
                     }
                   }}
-                  onLook={handleWashLook}
-                  onSprayChange={handleWashSprayChange}
-                  onNozzleCycle={handleWashNozzleCycle}
+                  onLook={session?.playerId?handleWashLook:undefined}
+                  onSprayChange={session?.playerId?handleWashSprayChange:undefined}
+                  onNozzleCycle={session?.playerId?handleWashNozzleCycle:undefined}
                 />
               </React.Suspense>
 
@@ -1186,17 +1206,16 @@ function App() {
                     <div
                       className="mobile-stick-area"
                       onPointerDown={e => {
+                        e.preventDefault();if(movePointer.current!==null)return;movePointer.current=e.pointerId;
                         e.currentTarget.setPointerCapture(e.pointerId);
-                        washControls.current.moveZ = 1;
-                        setWashInput(washControls.current);
+                        moveTouch(e);
                       }}
-                      onPointerUp={() => {
-                        washControls.current.moveZ = 0;
-                        setWashInput(washControls.current);
-                      }}
-                      onPointerCancel={() => {washControls.current.moveZ = 0;setWashInput(washControls.current);}}
+                      onPointerMove={moveTouch}
+                      onPointerUp={stopMoveTouch}
+                      onPointerCancel={stopMoveTouch}
+                      onLostPointerCapture={stopMoveTouch}
                     >
-                      <div className="mobile-stick-thumb" />
+                      <div className="mobile-stick-thumb" ref={moveThumb} />
                     </div>
 
                     <div className="mobile-actions-area">

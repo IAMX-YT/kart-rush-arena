@@ -12,7 +12,7 @@
       "destination": "https://sb-2cf1zfkzsyid.vercel.run/health"
     },
     {
-      "source": "/((?!assets/|art/|favicon.svg).*)",
+      "source": "/((?!assets/|art/|materials/|wash-world.png|favicon.svg).*)",
       "destination": "/index.html"
     }
   ]

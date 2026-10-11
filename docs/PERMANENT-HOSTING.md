@@ -30,4 +30,6 @@ Verify Create, the three explicit join roles, start, phone controller inputs and
 
 ## Access still needed
 
+Vercel now supports WebSockets in Functions (Beta): https://vercel.com/docs/functions/websockets . A Vercel-native on-demand migration is another option; this game's current single-process in-memory room simulation cannot simply be copied across independent Function instances. It needs shared durable state, one simulation owner per room, cross-instance coordination and reconnect recovery. The current Sandbox architecture has not been migrated.
+
 The alternate GitHub token identifies `thatsego-account-manger`; API identity does not establish that it is a temporary account. No Actions workflow was created or run. GitHub repository access does not supply VPS or hosting credentials. Personal VPS/Node-hosting selection and access are still pending, so permanent hosting has not been deployed.

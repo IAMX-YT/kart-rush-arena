@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import {RoundedBoxGeometry} from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import {RGBELoader} from 'three/examples/jsm/loaders/RGBELoader.js';
+import {detailedTree} from './washFoliage';
 import { splitLayout, splitViewport } from '../shared/display';
 import {
   CLEANABLE_OBJECTS,
@@ -24,6 +27,38 @@ interface WashSceneProps {
 }
 
 /* ────────────────────── Procedural Textures ────────────────────── */
+
+function pbrMaterial(asset:string, repeat:number, color='#ffffff', metalness=0):THREE.MeshStandardMaterial {
+  const loader=new THREE.TextureLoader();
+  const load=(kind:string)=>{const texture=loader.load(`/materials/${asset}-${kind}.jpg`);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(repeat,repeat);texture.anisotropy=4;if(kind==='color')texture.colorSpace=THREE.SRGBColorSpace;return texture;};
+  return new THREE.MeshStandardMaterial({map:load('color'),normalMap:load('normal'),roughnessMap:load('roughness'),normalScale:new THREE.Vector2(.45,.45),color,roughness:1,metalness});
+}
+
+// Project the shared cleaning grid onto real mesh surfaces in world space.
+// The projection matches the server's hit-point mapping, including rotated parts.
+function applySurfaceDirt(group:THREE.Group, texture:THREE.Texture, id:string) {
+  const def=CLEANABLE_OBJECTS.find(object=>object.id===id)!;
+  group.updateMatrixWorld(true);
+  group.traverse(object=>{
+    if(!(object instanceof THREE.Mesh))return;
+    object.castShadow=true;object.receiveShadow=true;
+    const originals=Array.isArray(object.material)?object.material:[object.material];
+    object.material=originals.map(original=>{
+      const material=original.clone() as THREE.MeshStandardMaterial;
+      material.onBeforeCompile=shader=>{
+        shader.uniforms.surfaceDirt={value:texture};
+        shader.uniforms.dirtOrigin={value:new THREE.Vector3(...def.center)};
+        shader.uniforms.dirtSize={value:new THREE.Vector3(...def.size)};
+        shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 dirtWorldPosition;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\ndirtWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        const yProjection=id==='patio'?'(dirtWorldPosition.z - dirtOrigin.z) / dirtSize.z + 0.5':'(dirtWorldPosition.y - dirtOrigin.y) / dirtSize.y + 0.5';
+        shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform sampler2D surfaceDirt; uniform vec3 dirtOrigin; uniform vec3 dirtSize; varying vec3 dirtWorldPosition;').replace('#include <color_fragment>',`#include <color_fragment>\nvec2 dirtUV = clamp(vec2((dirtWorldPosition.x-dirtOrigin.x)/dirtSize.x+0.5,1.0-(${yProjection})),0.0,1.0);\nvec4 grime=texture2D(surfaceDirt,dirtUV);\ndiffuseColor.rgb=mix(diffuseColor.rgb,grime.rgb,grime.a*0.86);`).replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,0.95,grime.a);').replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor*=1.0-grime.a*0.95;');
+      };
+      material.customProgramCacheKey=()=>`surface-dirt-${id}`;
+      return material;
+    });
+    if(!Array.isArray(originals)||originals.length===1)object.material=object.material[0];
+  });
+}
 
 function createConcreteTexture(shade = 0.78, tileSize = 0): THREE.CanvasTexture {
   const canvas = document.createElement('canvas');
@@ -173,6 +208,8 @@ function createRoofTexture(): THREE.CanvasTexture {
 /* ────────────────────── Dirt Surface System ────────────────────── */
 
 class DirtSurface {
+  source: HTMLCanvasElement;
+  previous='';
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   texture: THREE.CanvasTexture;
@@ -191,7 +228,7 @@ class DirtSurface {
     const w = this.canvas.width, h = this.canvas.height;
 
     // Base layer: dark grime
-    this.ctx.fillStyle = '#2a1f12';
+    this.ctx.fillStyle = 'rgba(94,83,61,0.72)';
     this.ctx.fillRect(0, 0, w, h);
 
     // Mud splatter layer
@@ -226,7 +263,7 @@ class DirtSurface {
       const x = Math.random() * w;
       const y = Math.random() * h;
       const r = Math.random() * 20 + 5;
-      this.ctx.fillStyle = `rgba(15, 10, 5, ${0.3 + Math.random() * 0.4})`;
+      this.ctx.fillStyle = `rgba(35, 31, 22, ${0.07 + Math.random() * 0.13})`;
       this.ctx.beginPath();
       this.ctx.ellipse(x, y, r, r * 0.7, Math.random() * Math.PI, 0, Math.PI * 2);
       this.ctx.fill();
@@ -238,22 +275,26 @@ class DirtSurface {
       this.ctx.fillRect(Math.random() * w, Math.random() * h, 2 + Math.random() * 3, 2 + Math.random() * 3);
     }
 
+    this.source=document.createElement('canvas');this.source.width=w;this.source.height=h;this.source.getContext('2d')!.drawImage(this.canvas,0,0);
     this.texture = new THREE.CanvasTexture(this.canvas);
+    this.texture.colorSpace=THREE.SRGBColorSpace;
     this.texture.needsUpdate = true;
   }
 
   updateFromGrid(grid: Uint8Array, highlight = false) {
+    const key=String(highlight)+grid.join('');if(key===this.previous)return;this.previous=key;
     const w = this.canvas.width;
     const h = this.canvas.height;
     const cellW = w / this.gridX;
     const cellH = h / this.gridY;
 
     this.ctx.clearRect(0, 0, w, h);
+    this.ctx.drawImage(this.source,0,0);
 
     for (let r = 0; r < this.gridY; r++) {
       for (let c = 0; c < this.gridX; c++) {
         const idx = r * this.gridX + c;
-        if (grid[idx] === 0) {
+        if (grid[idx] === 1) {this.ctx.clearRect(c*cellW,r*cellH,cellW+0.1,cellH+0.1);} else if (highlight) {
           if (highlight) {
             // Pulsing highlight to show remaining dirt
             this.ctx.fillStyle = 'rgba(255, 140, 0, 0.85)';
@@ -325,7 +366,7 @@ function buildHouse(brickTex: THREE.CanvasTexture, woodTex: THREE.CanvasTexture,
   group.position.set(0, 0, -12);
 
   // Main house body
-  const wallMat = new THREE.MeshStandardMaterial({ map: brickTex, roughness: 0.85, metalness: 0 });
+  const wallMat = pbrMaterial('brick_wall_001',3);
   const mainBody = new THREE.Mesh(new THREE.BoxGeometry(14, 6, 8), wallMat);
   mainBody.position.set(0, 3, 0);
   mainBody.castShadow = true;
@@ -340,9 +381,8 @@ function buildHouse(brickTex: THREE.CanvasTexture, woodTex: THREE.CanvasTexture,
   roofShape.lineTo(7.5, 0);
   roofShape.lineTo(-7.5, 0);
   const roofGeo = new THREE.ExtrudeGeometry(roofShape, { depth: 9, bevelEnabled: false });
-  const roof = new THREE.Mesh(roofGeo, roofMat);
-  roof.rotation.x = -Math.PI / 2;
-  roof.position.set(0, 6, 4.5);
+  const roof = new THREE.Mesh(roofGeo, [wallMat,roofMat]);
+  roof.position.set(0, 6, -4.5);
   roof.castShadow = true;
   group.add(roof);
 
@@ -373,9 +413,10 @@ function buildHouse(brickTex: THREE.CanvasTexture, woodTex: THREE.CanvasTexture,
   for (const wp of windowPositions) {
     const glass = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.2), glassMat);
     glass.position.set(wp.x, wp.y, 4.07);
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 0.08), windowFrameMat);
-    frame.position.set(wp.x, wp.y, 4.05);
-    group.add(glass, frame);
+    glass.position.z=4.115;
+    group.add(glass);
+    for(const side of [-1,1]){const vertical=new THREE.Mesh(new THREE.BoxGeometry(.09,1.4,.08),windowFrameMat);vertical.position.set(wp.x+side*.755,wp.y,4.10);const horizontal=new THREE.Mesh(new THREE.BoxGeometry(1.6,.09,.08),windowFrameMat);horizontal.position.set(wp.x,wp.y+side*.655,4.10);group.add(vertical,horizontal);}
+    const mullion=new THREE.Mesh(new THREE.BoxGeometry(.05,1.3,.06),windowFrameMat);mullion.position.set(wp.x,wp.y,4.14);group.add(mullion);
   }
 
   // Garage section (right side)
@@ -430,8 +471,8 @@ function buildDriveway(dirtTex: THREE.CanvasTexture): THREE.Group {
   const cleanMat = new THREE.MeshStandardMaterial({ map: concreteTex, roughness: 0.8, metalness: 0 });
 
   // Main driveway
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(18, 0.15, 14), cleanMat);
-  floor.position.y = -0.075;
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(16, 0.2, 16), pbrMaterial('concrete_floor_02',5));
+  floor.position.y = 0;
   floor.receiveShadow = true;
   group.add(floor);
 
@@ -440,11 +481,11 @@ function buildDriveway(dirtTex: THREE.CanvasTexture): THREE.Group {
     map: dirtTex, transparent: true, opacity: 0.92, roughness: 0.95,
     polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1,
   });
-  const dirtPlane = new THREE.Mesh(new THREE.PlaneGeometry(18, 14), dirtMat);
+  const dirtPlane = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), dirtMat);
   dirtPlane.rotation.x = -Math.PI / 2;
-  dirtPlane.position.y = 0.005;
+  dirtPlane.position.y = 0.102;
   dirtPlane.receiveShadow = true;
-  group.add(dirtPlane);
+  applySurfaceDirt(group,dirtTex,'patio');
 
   return group;
 }
@@ -454,7 +495,7 @@ function buildBench(dirtTex: THREE.CanvasTexture): THREE.Group {
   const group = new THREE.Group();
   group.position.set(3.5, 0, -3);
 
-  const woodMat = new THREE.MeshStandardMaterial({ color: '#7a5230', roughness: 0.65 });
+  const woodMat = pbrMaterial('weathered_brown_planks',1,'#d3b99b');
   const ironMat = new THREE.MeshStandardMaterial({ color: '#2c3e50', roughness: 0.35, metalness: 0.8 });
 
   // Cast iron curved legs
@@ -493,11 +534,7 @@ function buildBench(dirtTex: THREE.CanvasTexture): THREE.Group {
     group.add(arm);
   }
 
-  // Dirt overlay matches CLEANABLE_OBJECTS size [2.4, 1.2, 1.2]
-  const dirtMat = new THREE.MeshStandardMaterial({ map: dirtTex, transparent: true, opacity: 0.9, roughness: 0.9 });
-  const dirtBox = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 1.2), dirtMat);
-  dirtBox.position.set(0, 0.6, 0);
-  group.add(dirtBox);
+  applySurfaceDirt(group,dirtTex,'bench');
 
   return group;
 }
@@ -528,11 +565,7 @@ function buildFence(dirtTex: THREE.CanvasTexture): THREE.Group {
     group.add(cap);
   }
 
-  // Dirt overlay matches CLEANABLE_OBJECTS size [15, 2.0, 0.4]
-  const dirtMat = new THREE.MeshStandardMaterial({ map: dirtTex, transparent: true, opacity: 0.9, roughness: 0.9 });
-  const dirtBox = new THREE.Mesh(new THREE.BoxGeometry(15, 1.8, 0.4), dirtMat);
-  dirtBox.position.set(0, 1.0, 0);
-  group.add(dirtBox);
+  applySurfaceDirt(group,dirtTex,'fence');
 
   return group;
 }
@@ -602,50 +635,53 @@ function buildBicycle(dirtTex: THREE.CanvasTexture): THREE.Group {
   basket.position.set(0.62, 0.82, 0);
   group.add(basket);
 
-  // Dirt overlay matches CLEANABLE_OBJECTS size [2.0, 1.4, 0.8]
-  const dirtMat = new THREE.MeshStandardMaterial({ map: dirtTex, transparent: true, opacity: 0.9, roughness: 0.9 });
-  const dirtBox = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.4, 0.8), dirtMat);
-  dirtBox.position.set(0, 0.7, 0);
-  group.add(dirtBox);
+  applySurfaceDirt(group,dirtTex,'bicycle');
 
   return group;
 }
 
 // Scenic Vintage Car (Parked on Driveway near Garage)
-function buildScenicCar(): THREE.Group {
+function buildScenicCar(dirtTex:THREE.Texture): THREE.Group {
   const group = new THREE.Group();
-  group.position.set(8.5, 0, 1.5);
-  group.rotation.y = Math.PI * 0.05;
+  group.position.set(0, 0, -1);
 
-  const bodyMat = new THREE.MeshStandardMaterial({ color: '#1d4ed8', roughness: 0.2, metalness: 0.6 });
+  const bodyMat = new THREE.MeshPhysicalMaterial({ color: '#992e24', roughness: 0.26, metalness: 0.55,clearcoat:1,clearcoatRoughness:.12 });
   const chromeMat = new THREE.MeshStandardMaterial({ color: '#d1d5db', roughness: 0.08, metalness: 0.95 });
-  const glassMat = new THREE.MeshStandardMaterial({ color: '#87ceeb', roughness: 0.02, metalness: 0.3, opacity: 0.45, transparent: true });
+  const glassMat = new THREE.MeshStandardMaterial({ color: '#273f49', roughness: 0.08, metalness: 0.55 });
   const tireMat = new THREE.MeshStandardMaterial({ color: '#18181b', roughness: 0.95 });
   const hubMat = new THREE.MeshStandardMaterial({ color: '#9ca3af', roughness: 0.2, metalness: 0.8 });
 
   // Main hull
-  const body = new THREE.Mesh(new THREE.BoxGeometry(4.2, 1.1, 1.9), bodyMat);
-  body.position.set(0, 0.7, 0);
+  const profile=new THREE.Shape();profile.moveTo(-2.08,.83);profile.quadraticCurveTo(-2.08,1.08,-1.7,1.12);profile.lineTo(.7,1.12);profile.quadraticCurveTo(2.12,1.10,2.12,.8);profile.lineTo(2.12,.30);profile.lineTo(1.82,.30);profile.absarc(1.4,.30,.42,0,Math.PI,false);profile.lineTo(-.98,.30);profile.absarc(-1.4,.30,.42,0,Math.PI,false);profile.lineTo(-2.08,.30);profile.closePath();
+  const body = new THREE.Mesh(new THREE.ExtrudeGeometry(profile,{depth:1.7,bevelEnabled:true,bevelSize:.07,bevelThickness:.08,bevelSegments:3,steps:1,curveSegments:24}), bodyMat);
+  body.position.set(0,0,-.85);
   body.castShadow = true;
   group.add(body);
 
   // Cabin
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.8, 1.7), bodyMat);
-  cabin.position.set(-0.2, 1.65, 0);
+  const cabin = new THREE.Mesh(new RoundedBoxGeometry(2.2, 0.8, 1.7,4,.25), bodyMat);
+  cabin.position.set(-0.2, 1.35, 0);
   cabin.castShadow = true;
   group.add(cabin);
 
   // Windshield & windows
   const windshield = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.7), glassMat);
-  windshield.position.set(0.7, 1.55, 0);
+  windshield.position.set(0.91, 1.38, 0);
   windshield.rotation.y = Math.PI / 2;
   windshield.rotation.x = 0.15;
   group.add(windshield);
+  for(const side of [-1,1]) {
+    for(const x of [-.72,.25]) {const window=new THREE.Mesh(new RoundedBoxGeometry(.85,.49,.028,3,.08),glassMat);window.position.set(x,1.39,side*.851);group.add(window);const handle=new THREE.Mesh(new RoundedBoxGeometry(.15,.035,.045,2,.012),chromeMat);handle.position.set(x+.2,.96,side*.96);group.add(handle);}
+    const sill=new THREE.Mesh(new RoundedBoxGeometry(3.1,.045,.04,2,.015),chromeMat);sill.position.set(0,.49,side*.98);group.add(sill);
+    for(const x of [-2.205,2.205]){const lamp=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.05,24),new THREE.MeshStandardMaterial({color:x>0?'#f3dfb3':'#8c1712',roughness:.18,metalness:.25}));lamp.rotation.z=Math.PI/2;lamp.position.set(x,.75,side*.65);group.add(lamp);const trim=new THREE.Mesh(new THREE.TorusGeometry(.135,.018,8,24),chromeMat);trim.rotation.y=Math.PI/2;trim.position.copy(lamp.position);trim.position.x+=x>0?.03:-.03;group.add(trim);}
+  }
+  const grille=new THREE.Mesh(new THREE.BoxGeometry(.025,.32,1.3),new THREE.MeshStandardMaterial({color:'#182021',metalness:.5,roughness:.4}));grille.position.set(2.205,.62,0);group.add(grille);
+  for(let z=-.58;z<.6;z+=.075){const bar=new THREE.Mesh(new THREE.BoxGeometry(.028,.3,.018),chromeMat);bar.position.set(2.23,.62,z);group.add(bar);}
 
   // Chrome bumpers
-  const frontBumper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 2.0), chromeMat);
+  const frontBumper = new THREE.Mesh(new RoundedBoxGeometry(0.14, 0.13, 1.94,3,.045), chromeMat);
   frontBumper.position.set(2.16, 0.35, 0);
-  const rearBumper = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 2.0), chromeMat);
+  const rearBumper = new THREE.Mesh(new RoundedBoxGeometry(0.14, 0.13, 1.94,3,.045), chromeMat);
   rearBumper.position.set(-2.16, 0.35, 0);
   group.add(frontBumper, rearBumper);
 
@@ -655,12 +691,14 @@ function buildScenicCar(): THREE.Group {
     tire.rotation.x = Math.PI / 2;
     tire.position.set(wp.x, 0.35, wp.z);
     tire.castShadow = true;
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.24, 8), hubMat);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.24, 32), hubMat);
     hub.rotation.x = Math.PI / 2;
     hub.position.set(wp.x, 0.35, wp.z);
     group.add(tire, hub);
+    const rim=new THREE.Mesh(new THREE.TorusGeometry(.23,.028,8,32),chromeMat);rim.position.set(wp.x,.35,wp.z+(wp.z>0?.13:-.13));group.add(rim);
   }
 
+  applySurfaceDirt(group,dirtTex,'car');
   return group;
 }
 
@@ -700,11 +738,7 @@ function buildCart(dirtTex: THREE.CanvasTexture): THREE.Group {
     group.add(leg);
   }
 
-  // Dirt overlay matches CLEANABLE_OBJECTS size [2.2, 1.1, 1.4]
-  const dirtMat = new THREE.MeshStandardMaterial({ map: dirtTex, transparent: true, opacity: 0.9, roughness: 0.9 });
-  const dirtBox = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.1, 1.4), dirtMat);
-  dirtBox.position.set(0, 0.7, 0);
-  group.add(dirtBox);
+  applySurfaceDirt(group,dirtTex,'cart');
 
   return group;
 }
@@ -746,11 +780,7 @@ function buildBirdbath(dirtTex: THREE.CanvasTexture): THREE.Group {
 
   group.add(base, column, basin, water, ring);
 
-  // Dirt overlay matches CLEANABLE_OBJECTS size [1.4, 1.8, 1.4]
-  const dirtMat = new THREE.MeshStandardMaterial({ map: dirtTex, transparent: true, opacity: 0.9, roughness: 0.9 });
-  const dirtBox = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.8, 1.4), dirtMat);
-  dirtBox.position.set(0, 0.9, 0);
-  group.add(dirtBox);
+  applySurfaceDirt(group,dirtTex,'birdbath');
 
   return group;
 }
@@ -781,6 +811,12 @@ function buildFirstPersonWand(): THREE.Group {
   handle.position.set(0, -0.07, 0.02);
   handle.rotation.x = -0.25;
   wand.add(handle);
+  const housing=new THREE.Mesh(new RoundedBoxGeometry(.12,.13,.28,4,.025),new THREE.MeshStandardMaterial({color:'#c94330',roughness:.36,metalness:.12}));housing.position.set(0,.025,.055);wand.add(housing);
+  for(let i=0;i<5;i++){const ridge=new THREE.Mesh(new THREE.BoxGeometry(.085,.012,.016),gripMat);ridge.position.set(0,.094,-.03+i*.037);wand.add(ridge);}
+  const gloveMat=new THREE.MeshStandardMaterial({color:'#d9a33c',roughness:.72});
+  const hand=new THREE.Mesh(new RoundedBoxGeometry(.092,.12,.09,4,.025),gloveMat);hand.position.set(.025,-.105,.045);wand.add(hand);
+  for(let i=0;i<4;i++){const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.012,.049,3,6),gloveMat);finger.rotation.z=Math.PI/2;finger.position.set(0,-.077-i*.021,-.011);wand.add(finger);}
+  const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.042,.22,4,8),new THREE.MeshStandardMaterial({color:'#294b67',roughness:.8}));arm.position.set(.074,-.28,.12);arm.rotation.z=-.2;wand.add(arm);
 
   // Red trigger
   const triggerMat = new THREE.MeshStandardMaterial({ color: '#ef4444', roughness: 0.3 });
@@ -1073,7 +1109,7 @@ export function PowerWashScene({
 
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality === 'high' ? 1.75 : 1));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.4;
+    renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = quality === 'high';
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -1084,6 +1120,8 @@ export function PowerWashScene({
     // Sky dome
     const sky = createSkyDome();
     scene.add(sky);
+    let environment:THREE.WebGLRenderTarget|undefined;const pmrem=new THREE.PMREMGenerator(renderer);let disposed=false;
+    new RGBELoader().load('/materials/daylight.hdr',hdr=>{if(disposed){hdr.dispose();return;}hdr.mapping=THREE.EquirectangularReflectionMapping;environment=pmrem.fromEquirectangular(hdr);scene.environment=environment.texture;scene.environmentIntensity=.65;hdr.dispose();},undefined,()=>{});
 
     // Atmospheric fog
     scene.fog = new THREE.FogExp2('#c8dce8', 0.012);
@@ -1120,11 +1158,7 @@ export function PowerWashScene({
     // Large grass lawn
     const grassTex = createConcreteTexture(0.4, 0);
     grassTex.repeat.set(8, 8);
-    const grassMat = new THREE.MeshStandardMaterial({
-      color: '#4da848',
-      roughness: 0.9,
-      map: grassTex,
-    });
+    const grassMat = pbrMaterial('lawn',35,'#b2bd82');
     const grass = new THREE.Mesh(new THREE.PlaneGeometry(150, 150), grassMat);
     grass.rotation.x = -Math.PI / 2;
     grass.position.y = -0.2;
@@ -1165,7 +1199,7 @@ export function PowerWashScene({
     const bicycle = buildBicycle(dirtSurfaces.get('bicycle')!.texture);
     const cart = buildCart(dirtSurfaces.get('cart')!.texture);
     const birdbath = buildBirdbath(dirtSurfaces.get('birdbath')!.texture);
-    const scenicCar = buildScenicCar();
+    const scenicCar = buildScenicCar(dirtSurfaces.get('car')!.texture);
 
     scene.add(house, driveway, bench, fence, bicycle, cart, birdbath, scenicCar);
 
@@ -1206,13 +1240,7 @@ export function PowerWashScene({
       { x: 18, z: 5 }, { x: -18, z: 8 },
     ];
     for (const tp of treePositions) {
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 3, 6), treeTrunkMat);
-      trunk.position.set(tp.x, 1.5, tp.z);
-      trunk.castShadow = true;
-      const canopy = new THREE.Mesh(new THREE.SphereGeometry(2.2, 8, 8), leafMat);
-      canopy.position.set(tp.x, 4.2, tp.z);
-      canopy.castShadow = true;
-      scene.add(trunk, canopy);
+      scene.add(detailedTree(tp.x,tp.z,quality==='high'));
     }
 
     // Flower beds along house front
@@ -1251,7 +1279,7 @@ export function PowerWashScene({
       lastPointerX = e.clientX;
       lastPointerY = e.clientY;
       try { parent.setPointerCapture(e.pointerId); } catch {}
-      onSprayChange?.(true);
+      if(e.pointerType==='mouse')onSprayChange?.(true);
     };
 
     const handlePointerMove = (e: PointerEvent) => {
@@ -1370,15 +1398,15 @@ export function PowerWashScene({
           if (isSpraying) {
             fpWand.position.set(
               0.22 + (Math.random() - 0.5) * 0.003,
-              -0.20 + (Math.random() - 0.5) * 0.005,
-              -0.34 + Math.sin(now * 0.08) * 0.012
+              -0.14 + (Math.random() - 0.5) * 0.005,
+              -0.47 + Math.sin(now * 0.08) * 0.012
             );
             fpWand.rotation.x = -0.04 + (Math.random() - 0.5) * 0.015;
           } else {
             fpWand.position.set(
               0.22,
-              -0.20 + Math.sin(now * 0.002) * 0.003,
-              -0.34
+              -0.14 + Math.sin(now * 0.002) * 0.003,
+              -0.47
             );
             fpWand.rotation.x = 0;
           }
@@ -1479,6 +1507,7 @@ export function PowerWashScene({
     animId = requestAnimationFrame(renderLoop);
 
     return () => {
+      disposed=true;environment?.dispose();pmrem.dispose();if(scene.background instanceof THREE.Texture)scene.background.dispose();
       cancelAnimationFrame(animId);
       resizeObs.disconnect();
       parent.removeEventListener('pointerdown', handlePointerDown);
@@ -1488,6 +1517,9 @@ export function PowerWashScene({
       parent.removeEventListener('wheel', handleWheel);
       for (const ds of dirtSurfaces.values()) ds.dispose();
       sprayEffect.dispose();
+      const geometries=new Set<THREE.BufferGeometry>();const materials=new Set<THREE.Material>();const textures=new Set<THREE.Texture>();
+      scene.traverse(object=>{if(object instanceof THREE.Mesh||object instanceof THREE.Points){geometries.add(object.geometry);for(const material of Array.isArray(object.material)?object.material:[object.material]){materials.add(material);for(const value of Object.values(material))if(value instanceof THREE.Texture)textures.add(value);}}});
+      for(const geometry of geometries)geometry.dispose();for(const texture of textures)texture.dispose();for(const material of materials)material.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };
@@ -1526,7 +1558,7 @@ export function PowerWashPreview() {
             x: 0,
             y: 1.55,
             z: 3.5,
-            yaw: Math.PI,
+            yaw: 0,
             pitch: -0.15,
             spraying: true,
             nozzle: 1,
@@ -1536,6 +1568,7 @@ export function PowerWashPreview() {
           },
         ],
         objects: {
+          car:{id:'car',name:'Classic Roadster',totalCells:960,cleanedCells:0,percent:0,completed:false},
           patio: { id: 'patio', name: 'Driveway', totalCells: 1024, cleanedCells: 120, percent: 12, completed: false },
           bench: { id: 'bench', name: 'Garden Bench', totalCells: 256, cleanedCells: 0, percent: 0, completed: false },
           bicycle: { id: 'bicycle', name: 'Family Car', totalCells: 256, cleanedCells: 0, percent: 0, completed: false },
@@ -1559,9 +1592,9 @@ export function PowerWashPreview() {
 
   return (
     <div className="world-preview wash-preview">
-      <PowerWashScene room={demoRoom} follow="preview" quality="low" />
+      <img src="/wash-world.png" alt="Actual Rushroom gameplay: a dirty classic car in the courtyard" style={{width:'100%',height:'100%',objectFit:'cover'}} />
       <span className="preview-label">
-        LIVE 3D WORLD <i /> POWER WASH SIMULATOR 2
+        IN-GAME VIEW <i /> POWER WASH SIMULATOR 2
       </span>
     </div>
   );

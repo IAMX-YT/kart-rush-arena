@@ -37,6 +37,7 @@ export function useNetwork() {
   const washInput = useRef<WashInput>(neutralWashInput());
   const hasWashInput = useRef(false);
   const samples = useRef<{ room: RoomState; at: number }[]>([]);
+  const currentRoom=useRef<RoomState|null>(null);
 
   useEffect(() => {
     let disposed = false;
@@ -81,6 +82,8 @@ export function useNetwork() {
           setError('');
         }
         if (m.type === 'state') {
+          if(m.room.wash&&!currentRoom.current?.wash){const player=m.room.wash.players.find(player=>player.id===saved.current?.playerId);if(player)washInput.current={...neutralWashInput(),yaw:player.yaw,pitch:player.pitch};}
+          currentRoom.current=m.room;
           setRoom(m.room);
           samples.current.push({ room: m.room, at: performance.now() });
           if (samples.current.length > 4) samples.current.shift();
@@ -124,9 +127,9 @@ export function useNetwork() {
       if (ws.current?.readyState === 1) {
         ws.current.send(JSON.stringify({ type: 'ping', sent: performance.now() }));
         if (saved.current?.playerId) {
-          if (hasWashInput.current) {
+          if (hasWashInput.current && currentRoom.current?.wash) {
             ws.current.send(JSON.stringify({ type: 'wash_input', input: washInput.current }));
-          } else {
+          } else if (currentRoom.current?.race) {
             ws.current.send(JSON.stringify({ type: 'input', input: input.current }));
           }
         }
@@ -163,7 +166,7 @@ export function useNetwork() {
   const setWashInput = (value: WashInput) => {
     hasWashInput.current = true;
     washInput.current = value;
-    if (saved.current?.playerId && ws.current?.readyState === 1) {
+    if (saved.current?.playerId && currentRoom.current?.wash && ws.current?.readyState === 1) {
       ws.current.send(JSON.stringify({ type: 'wash_input', input: value }));
     }
   };
@@ -185,6 +188,7 @@ export function useNetwork() {
     input.current = neutral();
     hasWashInput.current = false;
     samples.current = [];
+    currentRoom.current=null;
   };
 
   return {

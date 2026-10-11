@@ -1,5 +1,15 @@
 # Rushroom shared agent handoff
 
+## Current Power Wash visual and host-flow update
+
+- Host Create buttons now always open the setup page and require explicit Screen only / Controller only / Screen + Controls selection before creating a room, even if already connected. Same-device hosts automatically get a local player; no second phone is needed. `/ ?create=power-wash` (without the space) opens setup directly.
+- Removed solid dirt bounding-box render meshes. Real object materials now receive world-space dirt projection matching server grid coordinates; unchanged grids do not trigger uploads. Added a cleanable Classic Roadster with wheel arches, metal trim, windows and curved bodywork.
+- Bundled CC0 photo-based PBR concrete/wood/brick/lawn textures and HDR reflections, fixed covered windows and roof orientation, added leaf/branch geometry and a detailed first-person washer with glove/sleeve. Asset license/source list is `public/materials/LICENSE.md`.
+- Same-device mobile movement now supports forward/back/strafe joystick input; touch look no longer starts spraying. Input release retains camera orientation. A real rendered scene capture is used for the homepage preview to avoid loading the full renderer before a match.
+- Local browser visual test passed actual car cleaning and no shader/material/browser errors; screenshots are in `test-results/wash-realism-*.png`. Single-phone host (390×844 touch browser) creation, 3D gameplay, real joystick movement, other device roles and reconnect passed. Removed desktop sonar overlap with the phone joystick. Full build and **45/45 automated checks** passed, including camera retention on missing input and car cleaning from spawn. These are browser-emulation checks, not physical-device performance measurements.
+- Existing backend was updated in place; **no new temporary sandbox was created**. Its existing expiry remains unchanged. Permanent/on-demand hosting is still a separate pending migration; this visual update does not resolve that hosting requirement.
+- The existing sandbox expired at its previously recorded 05:08:23 IST deadline during final verification. Public car-cleaning verification failed before that deadline; the camera/input initialization fix was then verified against a fresh local server. Do not claim this final simulation is live until a persistent/on-demand backend is deployed. The frontend and static in-game preview can remain published independently.
+
 ## Current device-role work and hosting requirement
 
 - User now explicitly requires every join device to choose **Screen only**, **Controller only**, or **Screen + Controls** before joining. QR/deep links only supply the room code; they do not force the role. Screens consume no player slots or gameplay inputs, controllers render no game canvas, and same-device players get gameplay plus touch controls.
