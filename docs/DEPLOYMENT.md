@@ -1,5 +1,7 @@
 # Temporary Vercel test deployment — October 11, 2026
 
+October 12 naming update: the Vercel project is now `rushroom`; the verified public alias is https://rushroom-games.vercel.app. It routes to the existing production deployment. `rushroom.vercel.app` is assigned to another project. This alias change does not refresh the temporary backend or deploy newer source commits. See [AGENT-HANDOFF.md](AGENT-HANDOFF.md) for shared agent and deployment status.
+
 Frontend: https://kart-rush-arena.vercel.app
 
 Authoritative game server: https://sb-5gif87awqlqg.vercel.run

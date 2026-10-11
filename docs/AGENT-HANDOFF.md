@@ -1,0 +1,43 @@
+# Rushroom shared agent handoff
+
+Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git history is the source of truth for committed work. Update it with your own completed changes and actual verification before handing work over.
+
+## Shared product decisions
+
+- Platform name: **Rushroom**. Existing GitHub repository: `IAMX-YT/kart-rush-arena`; repository name has not changed.
+- One multiplayer room supports own-device gameplay, a shared TV with up to four phone controllers, and remote homes with independent screens. Mixed arrangements are allowed.
+- Local split/fullscreen only affects the requesting display. Asking other displays to split requires recipient Accept/Decline; the request checkbox is unchecked by default.
+- Phone-controller buttons must stay large and support simultaneous touch inputs and cancellation. Steering directions must match their labels.
+- LAN hosting is optional; it is not required for the normal online create/join flow.
+
+## Work ownership and current evidence
+
+| Area | Current evidence | Next owner action |
+| --- | --- | --- |
+| Kart racing and platform | Existing original kart renderer, simulation, phone controls and shared display work. Preserved by integration commit `64b6699`. | Kart/platform agent preserves game behavior while changing shared flows. |
+| Power Wash game | Second agent integration commit `64b6699` adds wash simulation, renderer, controls and game selection. `src/client/washScene.tsx` has active uncommitted edits observed during this handoff. | Power Wash agent completes and verifies its own edits; other agents must not stage, revert or deploy them implicitly. |
+| Branding | Commit `9a8632f` changes package name to `rushroom` and browser title to `Rushroom — Play Together`; production build passed. | Preserve Rushroom platform branding; game names remain separate. |
+| Shared flows | README reports three arrangements, pairing and split consent; integration commit exists. | These are source changes; verify the current build on real browser sessions before calling them live-ready. |
+
+## Deployment ownership and status
+
+- Vercel project ID: `prj_hjedWVWN9lnyocpRHel43VJhuDuG`; project name changed to `rushroom`.
+- Vercel team ID: `team_lenG4YXQluvhvjs9yZZ4zUng`.
+- Public Rushroom alias: **https://rushroom-games.vercel.app**. Domain assignment is verified; HTTP 200 checked on October 12. It points to the existing production deployment, not a new deployment of active working files.
+- `rushroom.vercel.app` was rejected by Vercel because another project already owns it.
+- Existing `kart-rush-arena.vercel.app` alias remains available. Git integration was absent in the Vercel project when checked; a GitHub push alone must not be described as a completed deployment.
+- The observed public page title remains `Rushroom — Kart Rush Arena`; branding commit `9a8632f` requires a future frontend deployment.
+- Production alias currently targets `dpl_4tYKrhDu15yv1P4czRku4YsSzPeq`.
+- Historical backend `https://sb-5gif87awqlqg.vercel.run/health` returned **HTTP 410** during this handoff. The old sandbox has expired. A replacement backend must allow the new public frontend origin and publish correct join/display/controller URLs. Historical expiration is in `docs/DEPLOYMENT.md` and `docs/test-deployment.json`.
+- A deployment owner must record the source commit, frontend deployment ID, backend URL and expiration, and browser verification together. Do not deploy a mixture of another agent's active edits.
+
+## Coordination before editing shared files
+
+1. Read this handoff, inspect `git status --short`, and inspect recent commits before changing shared files.
+2. Fetch remote updates and compare them; with a dirty shared checkout, do not reset, stash or pull over another agent's work. In separate checkouts, pull/rebase your own clean branch before integration.
+3. Keep game-specific edits scoped where possible. Shared files include `src/client/main.tsx`, `src/client/style.css`, shared schemas/registry, room authority, README and deployment scripts. Coordinate their changes through this file and small commits.
+4. Stage exact files, not the whole shared working tree. Never stage or revert another agent's active changes.
+5. Record what you changed, how you verified it, what remains, and whether the change is committed, pushed or deployed. A claimed test count in a previous README is not a fresh verification result.
+6. Use temporary credentials only in session memory/stdin or child-process environment. Never save tokens in source, docs, remote URLs, commit messages or handoff files.
+
+At the final status check, active edits also appeared in `src/client/main.tsx` and `src/client/style.css` in addition to `src/client/washScene.tsx`. They were left unstaged and unchanged by the branding/handoff agent.

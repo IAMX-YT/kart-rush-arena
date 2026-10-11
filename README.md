@@ -1,5 +1,7 @@
 # Rushroom — Multiplayer Gaming Platform
 
+Shared agent status and integration notes: [AGENT-HANDOFF.md](docs/AGENT-HANDOFF.md).
+
 Original browser-based cooperative and competitive multiplayer platform: play on any phone, tablet, laptop, or shared TV screen with tactile phone controllers. Authoritative Node/WebSocket simulation. No login or office accounts needed.
 
 ## Games in the Platform
