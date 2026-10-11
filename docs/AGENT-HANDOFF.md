@@ -26,9 +26,9 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 - Main public Rushroom URL: **https://rushroom-games.vercel.app**. The user's latest instruction chooses this as the main URL and retires `rushroom-split.vercel.app`. Keep only the games domain attached; do not reattach either retired domain during deployments.
 - `rushroom.vercel.app` was rejected by Vercel because another project already owns it.
 - At the user's request, `kart-rush-arena.vercel.app` was removed from the project on October 12. Its alias lookup now returns 404; a fresh public request returns 404 `DEPLOYMENT_NOT_FOUND`. The new Rushroom URL still returns HTTP 200. Do not reattach the retired domain during deployments.
-- Production alias targets deployment `dpl_FcppiLAcjuYtNtvHssyTeKGqSzmf` (source commit `7dc78da`), READY on October 12. This preserves the second agent's Power Wash work and updates only the main-domain metadata. The production build passed; `rushroom-games.vercel.app` returns HTTP 200 with its own canonical URL. Both retired public domains return HTTP 404.
-- The verified live page title is now: `Rushroom | Split-Screen Multiplayer Games`.
-- Power Wash Simulator 2 realistic HUD, first-person pressure washer wand model, target object identification cards, interactive nozzle dock, dirt sonar, and desktop mouse drag/spray controls are now live on production.
+- Production alias targets deployment `dpl_D9tGDCtn4LE4K3xrDc1rczhD7uzb` (source commit `9c969f0`), READY on October 12. Fixes the homepage network reconnecting banner by guarding it to active rooms, provides online config fallback, and attaches strictly to `rushroom-games.vercel.app`.
+- The verified live page title is: `Rushroom | Split-Screen Multiplayer Games`.
+- Power Wash Simulator 2 realistic HUD, first-person pressure washer wand model, target object identification cards, interactive nozzle dock, dirt sonar, and desktop mouse drag/spray controls are active on production.
 - Historical backend `https://sb-5gif87awqlqg.vercel.run/health` returned **HTTP 410** during this handoff. The old sandbox has expired. A replacement backend must allow the new public frontend origin and publish correct join/display/controller URLs. Historical expiration is in `docs/DEPLOYMENT.md` and `docs/test-deployment.json`.
 - A deployment owner must record the source commit, frontend deployment ID, backend URL and expiration, and browser verification together. Do not deploy a mixture of another agent's active edits.
 
