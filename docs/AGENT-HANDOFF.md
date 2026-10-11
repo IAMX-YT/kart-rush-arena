@@ -23,9 +23,9 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 
 - Vercel project ID: `prj_hjedWVWN9lnyocpRHel43VJhuDuG`; project name changed to `rushroom`.
 - Vercel team ID: `team_lenG4YXQluvhvjs9yZZ4zUng`.
-- Preferred public Rushroom alias: **https://rushroom-split.vercel.app**. The user requested a split-related name; domain assignment and HTTP 200 were verified on October 12. Attached aliases: `rushroom-split.vercel.app`, `rushroom-games.vercel.app`, `kart-rush-arena.vercel.app`.
+- Preferred public Rushroom alias: **https://rushroom-split.vercel.app**. The user requested a split-related name; domain assignment and HTTP 200 were verified on October 12. Attached aliases: `rushroom-split.vercel.app`, `rushroom-games.vercel.app`.
 - `rushroom.vercel.app` was rejected by Vercel because another project already owns it.
-- Existing `kart-rush-arena.vercel.app` alias remains available.
+- At the user's request, `kart-rush-arena.vercel.app` was removed from the project on October 12. Its alias lookup now returns 404; a fresh public request returns 404 `DEPLOYMENT_NOT_FOUND`. The new Rushroom URL still returns HTTP 200. Do not reattach the retired domain during deployments.
 - Production alias targets deployment `dpl_H7U39He35YNV9REDxC6Hw6ycyWey` (built from commit `4b0f2f2`).
 - The verified live page title is now: `Rushroom | Split-Screen Multiplayer Games`.
 - Power Wash Simulator 2 realistic HUD, first-person pressure washer wand model, target object identification cards, interactive nozzle dock, dirt sonar, and desktop mouse drag/spray controls are now live on production.
@@ -45,4 +45,4 @@ At the final status check, active edits also appeared in `src/client/main.tsx` a
 
 ## Latest naming handoff
 
-The preferred public URL is `https://rushroom-split.vercel.app/`. `index.html` now defines `Rushroom | Split-Screen Multiplayer Games`, a browser multiplayer / phone-controller description, a canonical URL and Open Graph / Twitter sharing metadata. These metadata changes are source changes awaiting the next coordinated frontend deployment; the domain itself is already live. Do not claim that the live title changed until that deployment is verified. Keep the new frontend origin in backend CORS/origin configuration when restoring the server.
+The preferred public URL is `https://rushroom-split.vercel.app/`. `index.html` defines `Rushroom | Split-Screen Multiplayer Games`, a browser multiplayer / phone-controller description, a canonical URL and Open Graph / Twitter sharing metadata. The second agent's production deployment recorded above includes these metadata changes. Keep the new frontend origin in backend CORS/origin configuration when restoring the server. The old `kart-rush-arena.vercel.app` URL is retired by user request.
