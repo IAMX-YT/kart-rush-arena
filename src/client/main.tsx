@@ -68,6 +68,7 @@ function App() {
   const [showSplitMenu, setShowSplitMenu] = useState(false);
   const [requestOtherSplit, setRequestOtherSplit] = useState(false);
   const [activeToast, setActiveToast] = useState<string | null>(null);
+  const [targetedObject, setTargetedObject] = useState<{ name: string; percent: number } | null>(null);
 
   // Audio engine
   const washAudio = useRef<WashAudio>(new WashAudio());
@@ -80,6 +81,27 @@ function App() {
 
   // Last known cleaned object for toast
   const lastCompletedObject = useRef<string | null>(null);
+
+  const handleWashLook = (deltaYaw: number, deltaPitch: number) => {
+    washControls.current.yaw = (washControls.current.yaw + deltaYaw) % (Math.PI * 2);
+    washControls.current.pitch = Math.max(-0.85, Math.min(0.85, washControls.current.pitch + deltaPitch));
+    setWashInput(washControls.current);
+  };
+
+  const handleWashSprayChange = (spraying: boolean) => {
+    if (washControls.current.spray === spraying) return;
+    washControls.current.spray = spraying;
+    washAudio.current.update(spraying, washControls.current.nozzle);
+    setWashInput(washControls.current);
+  };
+
+  const handleWashNozzleCycle = (delta: number) => {
+    const next = (washControls.current.nozzle + delta + 4) % 4;
+    washControls.current.nozzle = next;
+    washAudio.current.playNozzleClick();
+    washAudio.current.update(washControls.current.spray, next);
+    setWashInput(washControls.current);
+  };
 
   useEffect(() => {
     fetch(SERVER_ORIGIN + '/api/config')
@@ -169,10 +191,10 @@ function App() {
       // Power wash controls
       if (room?.gameId === 'power-wash' && room?.wash) {
         let changed = false;
-        if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        if (e.code === 'KeyW') {
           washControls.current.moveZ = 1;
           changed = true;
-        } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        } else if (e.code === 'KeyS') {
           washControls.current.moveZ = -1;
           changed = true;
         } else if (e.code === 'KeyA') {
@@ -186,6 +208,12 @@ function App() {
           changed = true;
         } else if (e.code === 'ArrowRight') {
           washControls.current.yaw -= 0.08;
+          changed = true;
+        } else if (e.code === 'ArrowUp') {
+          washControls.current.pitch = Math.min(0.85, washControls.current.pitch + 0.06);
+          changed = true;
+        } else if (e.code === 'ArrowDown') {
+          washControls.current.pitch = Math.max(-0.85, washControls.current.pitch - 0.06);
           changed = true;
         } else if (e.code === 'Space') {
           washControls.current.spray = true;
@@ -243,7 +271,7 @@ function App() {
       // Power wash controls
       if (room?.gameId === 'power-wash' && room?.wash) {
         let changed = false;
-        if (e.code === 'KeyW' || e.code === 'KeyS' || e.code === 'ArrowUp' || e.code === 'ArrowDown') {
+        if (e.code === 'KeyW' || e.code === 'KeyS') {
           washControls.current.moveZ = 0;
           changed = true;
         }
@@ -905,6 +933,16 @@ function App() {
                     spraying: washControls.current.spray,
                     nozzle: washControls.current.nozzle,
                   }}
+                  onTargetObjectChange={(name, pct) => {
+                    if (!name) {
+                      setTargetedObject(null);
+                    } else {
+                      setTargetedObject({ name, percent: pct });
+                    }
+                  }}
+                  onLook={handleWashLook}
+                  onSprayChange={handleWashSprayChange}
+                  onNozzleCycle={handleWashNozzleCycle}
                 />
               </React.Suspense>
 
@@ -942,7 +980,12 @@ function App() {
               <div className="race-top">
                 <div className="wash-title-card">
                   <span className="eyebrow">POWER WASH SIMULATOR 2</span>
-                  <h2>COURTYARD RESTORATION</h2>
+                  <h2>SUBURBAN RESTORATION</h2>
+                  <div className="job-stars">
+                    {[20, 40, 60, 80, 98].map((t, idx) => (
+                      <span key={idx} className={`star ${(room.wash?.jobPercent || 0) >= t ? 'filled' : ''}`}>★</span>
+                    ))}
+                  </div>
                   <div className="progress-container">
                     <div className="progress-bar-bg">
                       <div
@@ -950,30 +993,34 @@ function App() {
                         style={{ width: `${room.wash.jobPercent}%` }}
                       />
                     </div>
-                    <span className="progress-text">{room.wash.jobPercent}% CLEAN</span>
+                    <span className="progress-text">{room.wash.jobPercent}%</span>
+                  </div>
+                  <div className="wash-job-sub">
+                    <span>🧼 {CLEANABLE_OBJECTS.filter(o => room.wash?.objects[o.id]?.completed).length}/{CLEANABLE_OBJECTS.length} Cleaned</span>
+                    <span>⏱ {Math.floor(room.wash.time / 60)}:{String(Math.floor(room.wash.time) % 60).padStart(2, '0')}</span>
                   </div>
                   {statusPill}
                 </div>
 
                 <div className="race-tools">
                   <button onClick={toggleSound}>
-                    {sound ? '♪ Sound on' : '♪ Sound off'}
+                    {sound ? '🔊' : '🔇'}
                   </button>
                   <button onClick={() => setQuality(quality === 'high' ? 'low' : 'high')}>
-                    {quality === 'high' ? 'High' : 'Low'} graphics
+                    {quality === 'high' ? '✦ HQ' : '◇ LQ'}
                   </button>
                   <button onClick={() => setShowSplitMenu(!showSplitMenu)}>
-                    ⛶ {localSplit ? 'Split: ON' : 'Split: OFF'}
+                    ⛶ {localSplit ? 'Split' : 'Solo'}
                   </button>
                   <button aria-label="Fullscreen" onClick={fullscreen}>
                     ⛶
                   </button>
                   {isHost && (
                     <button onClick={() => send({ type: 'pause' })}>
-                      {room.wash.phase === 'paused' ? 'Resume' : 'Pause'}
+                      {room.wash.phase === 'paused' ? '▶ Resume' : '⏸ Pause'}
                     </button>
                   )}
-                  {isHost && <button onClick={() => send({ type: 'lobby' })}>Lobby</button>}
+                  {isHost && <button onClick={() => send({ type: 'lobby' })}>↩ Lobby</button>}
                 </div>
               </div>
 
@@ -996,29 +1043,102 @@ function App() {
                       onChange={e => setRequestOtherSplit(e.target.checked)}
                       disabled={!localSplit}
                     />
-                    Request split view on the other player’s screen too
+                    Request split view on the other player's screen too
                   </label>
                 </div>
               )}
 
-              {/* Left HUD: Objects checklist */}
-              <div className="wash-hud" style={{ top: 125 }}>
+              {/* Crosshair reticle with spray active ring */}
+              <div className={`wash-crosshair ${washControls.current.spray ? 'spraying' : ''}`}>
+                <span className="wash-crosshair-ring" />
+                <span className="crosshair-dot" />
+              </div>
+
+              {/* Real-time Targeted Object Card */}
+              {targetedObject && targetedObject.name && (
+                <div className="wash-target-card">
+                  <div className="target-card-top">
+                    <span className="target-icon">🫧</span>
+                    <span className="target-name">{targetedObject.name}</span>
+                    <span className="target-percent">{targetedObject.percent}%</span>
+                  </div>
+                  <div className="target-mini-bar">
+                    <div
+                      className="target-mini-fill"
+                      style={{ width: `${targetedObject.percent}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Left HUD: Objects checklist with mini progress bars */}
+              <div className="wash-hud" style={{ top: 160 }}>
                 <div className="objects-hud-list">
                   {CLEANABLE_OBJECTS.map(def => {
                     const st = room.wash?.objects[def.id];
+                    const pct = st?.percent || 0;
                     return (
                       <div
                         key={def.id}
                         className={`object-item ${st?.completed ? 'completed' : ''}`}
                       >
-                        <span>{st?.completed ? '✓' : '○'}</span>
-                        <span>{def.name}</span>
-                        <b>{st?.percent || 0}%</b>
+                        <span className="obj-icon">{st?.completed ? '✓' : '○'}</span>
+                        <div className="object-item-info">
+                          <span>{def.name}</span>
+                          <div className="obj-mini-progress">
+                            <div className="obj-mini-fill" style={{ width: `${pct}%` }} />
+                          </div>
+                        </div>
+                        <b>{pct}%</b>
                       </div>
                     );
                   })}
                 </div>
               </div>
+
+              {/* Bottom-right: Interactive Nozzle Dock */}
+              <div className="nozzle-dock">
+                <span className="nozzle-dock-title">NOZZLE SELECT [1–4]</span>
+                <div className="nozzle-dock-buttons">
+                  {NOZZLES.map((n, idx) => {
+                    const isActive = washControls.current.nozzle === idx;
+                    return (
+                      <button
+                        key={n.id}
+                        type="button"
+                        className={`nozzle-btn ${isActive ? 'active' : ''}`}
+                        onClick={() => {
+                          washControls.current.nozzle = idx;
+                          washAudio.current.playNozzleClick();
+                          washAudio.current.update(washControls.current.spray, idx);
+                          setWashInput(washControls.current);
+                        }}
+                      >
+                        <span className="nozzle-btn-key">{idx + 1}</span>
+                        <span className="nozzle-btn-color" style={{ background: n.color, boxShadow: `0 0 8px ${n.color}` }} />
+                        <span className="nozzle-btn-label">{n.name.split(' ')[0]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Bottom-center: Dirt Sonar button */}
+              <button
+                type="button"
+                className={`sonar-action-btn ${washControls.current.highlight ? 'active' : ''}`}
+                onClick={() => {
+                  washControls.current.highlight = true;
+                  washAudio.current.playSonarPulse();
+                  setWashInput(washControls.current);
+                  setTimeout(() => {
+                    washControls.current.highlight = false;
+                    setWashInput(washControls.current);
+                  }, 2500);
+                }}
+              >
+                ✨ DIRT SONAR [Tab / H]
+              </button>
 
               {/* Mobile on-screen touch overlay for Arrangement A on phones */}
               {'ontouchstart' in window && !isPhoneControllerOnly && (
@@ -1080,7 +1200,7 @@ function App() {
               {/* PC Desktop Keyboard guide */}
               {session?.playerId && !('ontouchstart' in window) && (
                 <div className="keyboard-hint">
-                  WASD: Walk · Arrows: Aim · Space: Spray · 1–4: Nozzles · H/Tab: Highlight Dirt
+                  WASD: Walk · ← → ↑ ↓: Aim · Space: Spray · 1–4: Nozzles · H: Highlight Dirt
                 </div>
               )}
 
@@ -1093,7 +1213,7 @@ function App() {
 
               {room.wash.phase === 'paused' && (
                 <div className="countdown">
-                  <b>Ⅱ</b>
+                  <b>⏸</b>
                   <span>GAME PAUSED</span>
                 </div>
               )}

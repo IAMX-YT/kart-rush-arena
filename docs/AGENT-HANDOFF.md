@@ -15,7 +15,7 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 | Area | Current evidence | Next owner action |
 | --- | --- | --- |
 | Kart racing and platform | Existing original kart renderer, simulation, phone controls and shared display work. Preserved by integration commit `64b6699`. | Kart/platform agent preserves game behavior while changing shared flows. |
-| Power Wash game | Second agent integration commit `64b6699` adds wash simulation, renderer, controls and game selection. `src/client/washScene.tsx` has active uncommitted edits observed during this handoff. | Power Wash agent completes and verifies its own edits; other agents must not stage, revert or deploy them implicitly. |
+| Power Wash game | Second agent integration commit `64b6699`. Completed realistic PowerWash Simulator visual overhaul: first-person wand model with recoil, authentic HUD with real-time target object cards, 5-star rating, interactive nozzle dock, dirt sonar, mouse drag look & spray, aligned all 6 cleanable object 3D meshes with simulation bounding boxes. All 43 test suites passing, production build passing (`dist/` generated). | Power Wash agent verified local build and tests; awaiting coordinated deployment with live backend credentials. |
 | Branding | Commit `9a8632f` changes package name to `rushroom` and browser title to `Rushroom — Play Together`; production build passed. | Preserve Rushroom platform branding; game names remain separate. |
 | Shared flows | README reports three arrangements, pairing and split consent; integration commit exists. | These are source changes; verify the current build on real browser sessions before calling them live-ready. |
 
