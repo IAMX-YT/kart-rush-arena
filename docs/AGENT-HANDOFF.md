@@ -23,11 +23,12 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 
 - Vercel project ID: `prj_hjedWVWN9lnyocpRHel43VJhuDuG`; project name changed to `rushroom`.
 - Vercel team ID: `team_lenG4YXQluvhvjs9yZZ4zUng`.
-- Preferred public Rushroom alias: **https://rushroom-split.vercel.app**. The user requested a split-related name; domain assignment and HTTP 200 were verified on October 12. The previous `rushroom-games.vercel.app` alias remains attached. Both point to the existing production deployment, not a new deployment of active working files.
+- Preferred public Rushroom alias: **https://rushroom-split.vercel.app**. The user requested a split-related name; domain assignment and HTTP 200 were verified on October 12. Attached aliases: `rushroom-split.vercel.app`, `rushroom-games.vercel.app`, `kart-rush-arena.vercel.app`.
 - `rushroom.vercel.app` was rejected by Vercel because another project already owns it.
-- Existing `kart-rush-arena.vercel.app` alias remains available. Git integration was absent in the Vercel project when checked; a GitHub push alone must not be described as a completed deployment.
-- The observed public page title remains `Rushroom — Kart Rush Arena`; branding commit `9a8632f` requires a future frontend deployment.
-- Production alias currently targets `dpl_4tYKrhDu15yv1P4czRku4YsSzPeq`.
+- Existing `kart-rush-arena.vercel.app` alias remains available.
+- Production alias targets deployment `dpl_H7U39He35YNV9REDxC6Hw6ycyWey` (built from commit `4b0f2f2`).
+- The verified live page title is now: `Rushroom | Split-Screen Multiplayer Games`.
+- Power Wash Simulator 2 realistic HUD, first-person pressure washer wand model, target object identification cards, interactive nozzle dock, dirt sonar, and desktop mouse drag/spray controls are now live on production.
 - Historical backend `https://sb-5gif87awqlqg.vercel.run/health` returned **HTTP 410** during this handoff. The old sandbox has expired. A replacement backend must allow the new public frontend origin and publish correct join/display/controller URLs. Historical expiration is in `docs/DEPLOYMENT.md` and `docs/test-deployment.json`.
 - A deployment owner must record the source commit, frontend deployment ID, backend URL and expiration, and browser verification together. Do not deploy a mixture of another agent's active edits.
 
