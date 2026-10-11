@@ -1,0 +1,10 @@
+import WebSocket from 'ws';
+const endpoint=process.env.TEST_SERVER_URL;
+if(!endpoint)throw new Error('Set TEST_SERVER_URL');
+const ws=new WebSocket(endpoint.replace('https:','wss:')+'/ws',{origin:process.env.TEST_URL||'https://kart-rush-arena.vercel.app'});
+let interval;const measurements=[];
+ws.on('open',()=>{if(process.env.PROBE_ROOM)ws.send(JSON.stringify({type:'create',mode:'online',origin:process.env.TEST_URL||'https://kart-rush-arena.vercel.app'}));interval=setInterval(()=>ws.send(JSON.stringify({type:'ping',sent:Date.now()})),1000);});
+ws.on('message',data=>{const m=JSON.parse(data.toString());if(m.type==='pong'){measurements.push(Date.now()-m.sent);console.log('RTT',measurements.at(-1));if(measurements.length===8)ws.close();}});
+ws.on('close',(code)=>{clearInterval(interval);console.log(JSON.stringify({code,measurements}));});
+ws.on('error',e=>{console.error(e.message);process.exitCode=1;});
+setTimeout(()=>ws.close(),15000).unref();

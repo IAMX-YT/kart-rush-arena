@@ -1,0 +1,3 @@
+import {chromium} from '@playwright/test';
+const browser=await chromium.launch({channel:'chrome',headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+try{const page=await browser.newPage({viewport:{width:1440,height:960}});await page.goto('http://localhost:3000');await page.locator('.world-preview canvas').waitFor();await page.waitForFunction(()=>Number(document.querySelector('.world-preview .game-canvas')?.dataset.fps)>0);await page.locator('.world-preview canvas').screenshot({path:'public/sunburst-world.png'});console.log('Captured original 3D world artwork.');}finally{await browser.close();}

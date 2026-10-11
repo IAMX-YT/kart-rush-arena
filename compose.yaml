@@ -1,0 +1,27 @@
+services:
+  game:
+    build: .
+    restart: unless-stopped
+    environment:
+      MODE: online
+      PUBLIC_ORIGIN: https://${GAME_DOMAIN:?Set GAME_DOMAIN to your domain}
+    expose:
+      - "3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      GAME_DOMAIN: ${GAME_DOMAIN:?Set GAME_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+volumes:
+  caddy_data:
+  caddy_config:

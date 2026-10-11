@@ -1,0 +1,2 @@
+export function splitLayout(count:number){const columns=count<=1?1:count<=4?2:4;const rows=Math.ceil(Math.max(1,count)/columns);return {columns,rows};}
+export function splitViewport(index:number,count:number,width:number,height:number){const {columns,rows}=splitLayout(count),column=index%columns,row=Math.floor(index/columns);const left=Math.round(column*width/columns),right=Math.round((column+1)*width/columns),top=Math.round(row*height/rows),bottom=Math.round((row+1)*height/rows);return {x:left,y:height-bottom,width:right-left,height:bottom-top};}

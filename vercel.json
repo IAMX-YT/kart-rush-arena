@@ -1,0 +1,19 @@
+{
+  "framework": "vite",
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/api/config",
+      "destination": "https://sb-5gif87awqlqg.vercel.run/api/config"
+    },
+    {
+      "source": "/health",
+      "destination": "https://sb-5gif87awqlqg.vercel.run/health"
+    },
+    {
+      "source": "/((?!assets/|art/|favicon.svg).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

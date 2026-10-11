@@ -1,0 +1,28 @@
+{
+  "stage": "ready",
+  "name": "kart-rush-3d-test",
+  "url": "https://sb-5gif87awqlqg.vercel.run",
+  "expiresAt": "2026-10-11T19:02:18.446Z",
+  "commandId": "cmd_b216de2f52f74635a501a1f052b5",
+  "projectId": "prj_hjedWVWN9lnyocpRHel43VJhuDuG",
+  "health": {
+    "ok": true,
+    "mode": "online",
+    "rooms": 0,
+    "connections": 0,
+    "ticks": 40,
+    "maxTickMs": 0.17,
+    "uptime": 0
+  },
+  "frontend": "https://kart-rush-arena.vercel.app",
+  "frontendDeploymentId": "dpl_ARR37dVM4TxVrhVnr9eQteizy1gj",
+  "region": "bom1",
+  "verification": {
+    "tvSplitScreen": true,
+    "controllerOnly": true,
+    "largeButtons": true,
+    "leftRightTouch": true,
+    "reconnect": true,
+    "fullRacePassed": true
+  }
+}
