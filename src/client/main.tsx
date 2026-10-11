@@ -331,14 +331,15 @@ function App() {
   }
 
   function handleCreateRoom(gameIdToCreate = selectedGameId) {
-    if (!config || status !== 'Connected') {
+    if (page !== 'create' && (!config || status !== 'Connected')) {
+      setSelectedGameId(gameIdToCreate);
       setPage('create');
       return;
     }
     send({
       type: 'create',
-      mode: config.mode,
-      origin: config.origin || config.lan[0] || location.origin,
+      mode: config?.mode || 'online',
+      origin: config?.origin || config?.lan?.[0] || location.origin,
       gameId: gameIdToCreate,
     });
   }
@@ -692,10 +693,9 @@ function App() {
 
           <button
             className="primary full"
-            disabled={status !== 'Connected'}
             onClick={() => handleCreateRoom(selectedGameId)}
           >
-            Create room ↗
+            {status === 'Connected' ? 'Create room ↗' : 'Connecting to Server…'}
           </button>
           {statusPill}
         </main>
@@ -775,8 +775,8 @@ function App() {
               </>
             )}
 
-            <button className="primary full" disabled={status !== 'Connected'}>
-              Join Room ↗
+            <button className="primary full">
+              {status === 'Connected' ? 'Join Room ↗' : 'Connecting to Server…'}
             </button>
           </form>
           {statusPill}

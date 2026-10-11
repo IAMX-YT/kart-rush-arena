@@ -29,7 +29,8 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 - Production alias targets deployment `dpl_D9tGDCtn4LE4K3xrDc1rczhD7uzb` (source commit `9c969f0`), READY on October 12. Fixes the homepage network reconnecting banner by guarding it to active rooms, provides online config fallback, and attaches strictly to `rushroom-games.vercel.app`.
 - The verified live page title is: `Rushroom | Split-Screen Multiplayer Games`.
 - Power Wash Simulator 2 realistic HUD, first-person pressure washer wand model, target object identification cards, interactive nozzle dock, dirt sonar, and desktop mouse drag/spray controls are active on production.
-- Historical backend `https://sb-5gif87awqlqg.vercel.run/health` returned **HTTP 410** during this handoff. The old sandbox has expired. A replacement backend must allow the new public frontend origin and publish correct join/display/controller URLs. Historical expiration is in `docs/DEPLOYMENT.md` and `docs/test-deployment.json`.
+- Authoritative backend is live at `https://sb-33y4io3yvqam.vercel.run` (sandbox `rushroom-backend`), started October 12, allowing origin `https://rushroom-games.vercel.app`.
+- Create room and Join room buttons enabled unconditionally with graceful connection queuing, eliminating the disabled button issue.
 - A deployment owner must record the source commit, frontend deployment ID, backend URL and expiration, and browser verification together. Do not deploy a mixture of another agent's active edits.
 
 ## Coordination before editing shared files

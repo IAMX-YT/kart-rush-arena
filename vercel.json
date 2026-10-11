@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/api/config",
-      "destination": "https://sb-5gif87awqlqg.vercel.run/api/config"
+      "destination": "https://sb-33y4io3yvqam.vercel.run/api/config"
     },
     {
       "source": "/health",
-      "destination": "https://sb-5gif87awqlqg.vercel.run/health"
+      "destination": "https://sb-33y4io3yvqam.vercel.run/health"
     },
     {
       "source": "/((?!assets/|art/|favicon.svg).*)",
