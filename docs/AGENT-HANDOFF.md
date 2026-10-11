@@ -29,7 +29,7 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 - Production alias targets deployment `dpl_4h5Pu98QyYuodcxyX3v8d9Pp3RJo` (source commit `6ca85fb`), READY on October 12. Connects to active backend `https://sb-33y4io3yvqam.vercel.run`, enables Create/Join room buttons unconditionally, and attaches strictly to `rushroom-games.vercel.app`.
 - The verified live page title is: `Rushroom | Split-Screen Multiplayer Games`.
 - Power Wash Simulator 2 realistic HUD, first-person pressure washer wand model, target object identification cards, interactive nozzle dock, dirt sonar, and desktop mouse drag/spray controls are active on production.
-- Authoritative backend is live at `https://sb-33y4io3yvqam.vercel.run` (sandbox `rushroom-backend`), started October 12, allowing origin `https://rushroom-games.vercel.app`.
+- Current authoritative test backend: `https://sb-2cf1zfkzsyid.vercel.run` (sandbox `rushroom-live-restored`), allowing origin `https://rushroom-games.vercel.app`. Expires **October 12 at 05:08:23 IST** (`2026-10-11T23:38:23.283Z`). Vercel rejected extending the previous sandbox beyond its maximum execution timeout. This is temporary test hosting, not persistent multiplayer hosting.
 - Create room and Join room buttons enabled unconditionally with graceful connection queuing, eliminating the disabled button issue.
 - A deployment owner must record the source commit, frontend deployment ID, backend URL and expiration, and browser verification together. Do not deploy a mixture of another agent's active edits.
 
@@ -54,4 +54,11 @@ The main public URL is `https://rushroom-games.vercel.app/`. `index.html` keeps 
 - **Cause**: In `src/client/main.tsx`, `{status !== 'Connected' && (<div className="network-banner">...</div>)}` was evaluated globally under `<header>` without checking if an active match/room existed. Because static Vercel does not host WebSockets without an active backend URL, the client was in an infinite reconnection loop and displayed the warning banner on the landing page.
 - **Fix**: Guarded the banner so it only renders when the player is inside an active room (`{room && status !== 'Connected' && ...}`). Added fallback configuration when `/api/config` cannot be reached so the app defaults cleanly to online mode. Added exponential backoff to `src/client/network.ts` reconnect attempts to avoid spamming the console. Moved connection indicator on pre-game flows to a subtle status pill.
 - **Verification**: 43/43 tests pass (`pnpm test`); production build passes (`pnpm build`). Verified localhost HTML contains no rogue banners.
+
+## Actual WebSocket reconnection fix
+
+- Vercel's project environment variable `VITE_SERVER_ORIGIN` still contained expired `sb-5gif87awqlqg.vercel.run`. Build-time environment values override source defaults. HTTP config rewrites could succeed while the compiled WebSocket URL remained wrong.
+- Updated the Vercel environment variable, client fallback and HTTP rewrites together to the current backend above. Do all three on future replacements; hiding a banner or enabling buttons does not repair transport.
+- Added `scripts/public-connection-test.mjs`: real Chrome against the public URL verifies compiled WebSocket destination, room creation, phone join, readiness, game start, reload/resume with the same player, controller-only rendering and browser errors. Run with `TEST_SERVER_URL` set to the expected backend.
+- Initial public test passed against the previous healthy backend after correcting the environment. Fresh backend is healthy; final public verification is recorded after redeployment.
 

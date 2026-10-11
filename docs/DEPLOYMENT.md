@@ -1,4 +1,16 @@
-# Temporary Vercel test deployment — October 11, 2026
+# Current Rushroom deployment — October 12, 2026
+
+Current frontend: https://rushroom-games.vercel.app
+
+Current test backend: https://sb-2cf1zfkzsyid.vercel.run (`rushroom-live-restored`), expires **October 12 at 05:08:23 IST / October 11 at 23:38:23 UTC**. Static publication does not keep multiplayer running after sandbox expiry. Extending the previous sandbox beyond its maximum execution timeout was rejected. Persistent play needs a long-lived Node/WebSocket host.
+
+When replacing a backend, update the **Vercel project environment variable `VITE_SERVER_ORIGIN`**, the client fallback in `src/client/config.ts`, and both HTTP rewrites in `vercel.json`, then redeploy. Environment values override the fallback. The reconnection incident was caused by an old expired backend URL remaining in this build setting.
+
+Run `TEST_SERVER_URL=<current-backend> node scripts/public-connection-test.mjs` to verify the actual public WebSocket destination, create/join, game start and player resume. Record the deployment ID, source commit, backend URL/expiry and actual results in `AGENT-HANDOFF.md`. HTTP health/config responses alone do not prove multiplayer works.
+
+## Historical deployment — October 11, 2026
+
+The URLs and expiry below describe earlier testing, not the current backend.
 
 October 12 naming update: the Vercel project is now `rushroom`; the main public URL is https://rushroom-games.vercel.app. The user retired both `rushroom-split.vercel.app` and `kart-rush-arena.vercel.app`; do not reattach them. `rushroom.vercel.app` is assigned to another project. Domain changes do not refresh the temporary backend. See [AGENT-HANDOFF.md](AGENT-HANDOFF.md) for current source/deployment status.
 

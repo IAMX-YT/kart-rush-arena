@@ -1,4 +1,4 @@
-const defaultRemoteOrigin = 'https://sb-33y4io3yvqam.vercel.run';
+const defaultRemoteOrigin = 'https://sb-2cf1zfkzsyid.vercel.run';
 const isLocalhost =
   typeof window !== 'undefined' &&
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
