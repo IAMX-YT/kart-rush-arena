@@ -46,3 +46,11 @@ At the final status check, active edits also appeared in `src/client/main.tsx` a
 ## Latest naming handoff
 
 The main public URL is `https://rushroom-games.vercel.app/`. `index.html` keeps the title `Rushroom | Split-Screen Multiplayer Games`; canonical and Open Graph URLs now point to the games domain. Keep this frontend origin in backend CORS/origin configuration when restoring the server. Both `kart-rush-arena.vercel.app` and `rushroom-split.vercel.app` are retired by user request.
+
+## Homepage Reconnection Banner Resolution
+
+- **Issue**: Visitors opening the landing page `https://rushroom-games.vercel.app/` saw a prominent warning banner across the hero section: `Reconnecting · Inputs released. Check server address and Wi-Fi.`
+- **Cause**: In `src/client/main.tsx`, `{status !== 'Connected' && (<div className="network-banner">...</div>)}` was evaluated globally under `<header>` without checking if an active match/room existed. Because static Vercel does not host WebSockets without an active backend URL, the client was in an infinite reconnection loop and displayed the warning banner on the landing page.
+- **Fix**: Guarded the banner so it only renders when the player is inside an active room (`{room && status !== 'Connected' && ...}`). Added fallback configuration when `/api/config` cannot be reached so the app defaults cleanly to online mode. Added exponential backoff to `src/client/network.ts` reconnect attempts to avoid spamming the console. Moved connection indicator on pre-game flows to a subtle status pill.
+- **Verification**: 43/43 tests pass (`pnpm test`); production build passes (`pnpm build`). Verified localhost HTML contains no rogue banners.
+

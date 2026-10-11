@@ -105,13 +105,25 @@ function App() {
 
   useEffect(() => {
     fetch(SERVER_ORIGIN + '/api/config')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error('config fetch failed');
+        return r.json();
+      })
       .then(c => {
         setConfig(c);
         setMode(c.mode);
         setOrigin(c.origin || c.lan[0] || location.origin);
       })
-      .catch(() => {});
+      .catch(() => {
+        const fallback = {
+          mode: 'online' as const,
+          lan: [],
+          origin: location.origin,
+        };
+        setConfig(fallback);
+        setMode('online');
+        setOrigin(location.origin);
+      });
   }, []);
 
   useEffect(() => {
@@ -410,14 +422,14 @@ function App() {
         )}
       </header>
 
-      {error && (
+      {error && page !== 'home' && (
         <div className="error" role="alert">
           {error}
           <button onClick={() => location.reload()}>Reconnect</button>
         </div>
       )}
 
-      {status !== 'Connected' && (
+      {room && status !== 'Connected' && (
         <div className="network-banner">
           {status} · Inputs released. Check server address and Wi-Fi.
         </div>
@@ -685,6 +697,7 @@ function App() {
           >
             Create room ↗
           </button>
+          {statusPill}
         </main>
       )}
 

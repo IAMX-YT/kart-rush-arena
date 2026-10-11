@@ -42,6 +42,8 @@ export function useNetwork() {
     let disposed = false;
     let retry: ReturnType<typeof setTimeout>;
 
+    let retryDelay = 1500;
+
     try {
       saved.current = JSON.parse(sessionStorage.getItem('rush-session') || 'null');
     } catch {}
@@ -54,6 +56,7 @@ export function useNetwork() {
       ws.current = socket;
 
       socket.onopen = () => {
+        retryDelay = 1500;
         setStatus('Connected');
         if (saved.current) {
           socket.send(JSON.stringify({ ...saved.current, type: 'resume' }));
@@ -108,7 +111,8 @@ export function useNetwork() {
         hasWashInput.current = false;
         setStatus(e.code === 4001 ? 'Session opened elsewhere' : 'Reconnecting');
         if (e.code === 4001) return;
-        retry = setTimeout(connect, 1500);
+        retry = setTimeout(connect, retryDelay);
+        retryDelay = Math.min(8000, Math.round(retryDelay * 1.5));
       };
 
       socket.onerror = () => setStatus('Server unreachable');
