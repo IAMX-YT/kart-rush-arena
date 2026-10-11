@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     environment:
       MODE: online
-      PUBLIC_ORIGIN: https://${GAME_DOMAIN:?Set GAME_DOMAIN to your domain}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN to your frontend HTTPS origin}
     expose:
       - "3000"
     healthcheck:
