@@ -26,7 +26,7 @@ Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git
 - Main public Rushroom URL: **https://rushroom-games.vercel.app**. The user's latest instruction chooses this as the main URL and retires `rushroom-split.vercel.app`. Keep only the games domain attached; do not reattach either retired domain during deployments.
 - `rushroom.vercel.app` was rejected by Vercel because another project already owns it.
 - At the user's request, `kart-rush-arena.vercel.app` was removed from the project on October 12. Its alias lookup now returns 404; a fresh public request returns 404 `DEPLOYMENT_NOT_FOUND`. The new Rushroom URL still returns HTTP 200. Do not reattach the retired domain during deployments.
-- Production alias targets deployment `dpl_D9tGDCtn4LE4K3xrDc1rczhD7uzb` (source commit `9c969f0`), READY on October 12. Fixes the homepage network reconnecting banner by guarding it to active rooms, provides online config fallback, and attaches strictly to `rushroom-games.vercel.app`.
+- Production alias targets deployment `dpl_4h5Pu98QyYuodcxyX3v8d9Pp3RJo` (source commit `6ca85fb`), READY on October 12. Connects to active backend `https://sb-33y4io3yvqam.vercel.run`, enables Create/Join room buttons unconditionally, and attaches strictly to `rushroom-games.vercel.app`.
 - The verified live page title is: `Rushroom | Split-Screen Multiplayer Games`.
 - Power Wash Simulator 2 realistic HUD, first-person pressure washer wand model, target object identification cards, interactive nozzle dock, dirt sonar, and desktop mouse drag/spray controls are active on production.
 - Authoritative backend is live at `https://sb-33y4io3yvqam.vercel.run` (sandbox `rushroom-backend`), started October 12, allowing origin `https://rushroom-games.vercel.app`.
