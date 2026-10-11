@@ -15,6 +15,7 @@ import {
 } from '../shared/powerwash';
 import { WashAudio } from './washAudio';
 import { WashController } from './washController';
+import { KartTouchControls } from './kartTouchControls';
 import './style.css';
 
 const WorldPreview = React.lazy(() => import('./scene').then(m => ({ default: m.WorldPreview })));
@@ -49,8 +50,12 @@ function App() {
     : 'home';
 
   const [page, setPage] = useState(initialPage);
+  const [joinDeviceRole, setJoinDeviceRole] = useState<'screen' | 'controller' | 'player' | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<'kart-rush' | 'power-wash'>('power-wash');
-  const [arrangement, setArrangement] = useState<PlayArrangement>('this_device');
+  const [arrangement, setArrangement] = useState<PlayArrangement>(() => {
+    try {const saved=sessionStorage.getItem('rush-host-arrangement');return saved==='tv_display'||saved==='phone_controller'?saved:'this_device';} catch {return 'this_device';}
+  });
+  useEffect(() => {sessionStorage.setItem('rush-host-arrangement',arrangement);}, [arrangement]);
 
   const [mode, setMode] = useState<'lan' | 'online'>('lan');
   const [config, setConfig] = useState<{ mode: 'lan' | 'online'; lan: string[]; origin: string | null } | null>(null);
@@ -64,7 +69,7 @@ function App() {
   const [sound, setSound] = useState(false);
 
   // Split-screen state (Independent per display)
-  const [localSplit, setLocalSplit] = useState(true);
+  const [localSplit, setLocalSplit] = useState(initialPage === 'screen');
   const [showSplitMenu, setShowSplitMenu] = useState(false);
   const [requestOtherSplit, setRequestOtherSplit] = useState(false);
   const [activeToast, setActiveToast] = useState<string | null>(null);
@@ -342,10 +347,18 @@ function App() {
       origin: config?.origin || config?.lan?.[0] || location.origin,
       gameId: gameIdToCreate,
     });
+    setLocalSplit(arrangement === 'tv_display');
   }
 
   function handleJoinRoom(roleToJoin?: 'player' | 'screen' | 'controller') {
-    const r = roleToJoin || (page === 'screen' ? 'screen' : page === 'controller' ? 'controller' : 'player');
+    const r = roleToJoin || joinDeviceRole;
+    if (!r) return;
+    setPage(r === 'screen' ? 'screen' : r === 'controller' ? 'controller' : 'join');
+    setLocalSplit(r === 'screen');
+    const search = new URLSearchParams(location.search);
+    ['join', 'screen', 'controller'].forEach(key => search.delete(key));
+    search.set(r === 'player' ? 'join' : r, code.trim().toUpperCase());
+    history.replaceState(null, '', `/?${search}`);
     send({
       type: 'join',
       code: code.trim().toUpperCase(),
@@ -377,8 +390,14 @@ function App() {
 
   const me = room?.players.find(p => p.id === session?.playerId);
   const isHost = session?.role === 'host';
-  const isPhoneControllerOnly = session?.role === 'controller' || (session?.role === 'player' && page === 'controller');
+  const isPhoneControllerOnly = session?.role === 'controller' || (session?.role === 'player' && page === 'controller') || (isHost && arrangement === 'phone_controller');
   const isSpectatorScreen = session?.role === 'screen';
+
+  useEffect(() => {
+    if (session?.role === 'host' && !session.playerId && room && !room.race && !room.wash && arrangement !== 'tv_display') {
+      send({type:'keyboard', name:'Player 1', color:COLORS[0]});
+    }
+  }, [session?.role, session?.playerId, room?.code, arrangement]);
 
   // Check if there is an incoming split request directed at me on this display
   const incomingSplitRequest = room?.splitRequests.find(
@@ -672,13 +691,13 @@ function App() {
           </select>
 
           <label>Device Arrangement</label>
-          <div className="arrangement-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+          <div className="arrangement-grid">
             <button
               type="button"
               className={`arrangement-card ${arrangement === 'this_device' ? 'selected' : ''}`}
               onClick={() => setArrangement('this_device')}
             >
-              <b>Play on this screen</b>
+              <b>Screen + Controls</b>
               <span>Gameplay & controls on this device.</span>
             </button>
             <button
@@ -686,8 +705,11 @@ function App() {
               className={`arrangement-card ${arrangement === 'tv_display' ? 'selected' : ''}`}
               onClick={() => setArrangement('tv_display')}
             >
-              <b>Use as TV / Big Display</b>
+              <b>Screen only</b>
               <span>Shared display for phone controllers.</span>
+            </button>
+            <button type="button" className={`arrangement-card ${arrangement === 'phone_controller' ? 'selected' : ''}`} onClick={() => setArrangement('phone_controller')}>
+              <b>Controller only</b><span>Big controls here. Show gameplay on another screen.</span>
             </button>
           </div>
 
@@ -704,20 +726,8 @@ function App() {
       {/* JOIN ROOM FLOW */}
       {!room && (page === 'join' || page === 'screen' || page === 'controller') && (
         <main className="panel">
-          <span className="eyebrow">
-            {page === 'controller'
-              ? 'PHONE CONTROLLER'
-              : page === 'screen'
-              ? 'SHARED DISPLAY'
-              : 'JOIN ROOM'}
-          </span>
-          <h1>
-            {page === 'controller'
-              ? 'Use this phone as a gamepad.'
-              : page === 'screen'
-              ? 'Watch or display the game.'
-              : 'Join the room.'}
-          </h1>
+          <span className="eyebrow">JOIN ROOM</span>
+          <h1>How will you play?</h1>
 
           <form
             onSubmit={e => {
@@ -746,7 +756,23 @@ function App() {
               />
             </label>
 
-            {page !== 'screen' && (
+            <fieldset className="device-role-picker">
+              <legend>How will you use this device?</legend>
+              <div className="device-role-options">
+                {([
+                  ['screen', 'Screen only', 'Watch gameplay on this TV or monitor. Use a separate phone as your controller.'],
+                  ['controller', 'Controller only', 'Big buttons on this device. Watch gameplay on another screen.'],
+                  ['player', 'Screen + Controls', 'See your gameplay and control your player on this same device.'],
+                ] as const).map(([value, title, description]) => (
+                  <label key={value} className={`device-role-option ${joinDeviceRole === value ? 'selected' : ''}`}>
+                    <input type="radio" name="deviceRole" value={value} checked={joinDeviceRole === value} onChange={() => setJoinDeviceRole(value)} required />
+                    <span><b>{title}</b><small>{description}</small></span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {joinDeviceRole && joinDeviceRole !== 'screen' && (
               <>
                 <label>
                   Your Player Name
@@ -775,7 +801,7 @@ function App() {
               </>
             )}
 
-            <button className="primary full">
+            <button className="primary full" disabled={!joinDeviceRole}>
               {status === 'Connected' ? 'Join Room ↗' : 'Connecting to Server…'}
             </button>
           </form>
@@ -1110,7 +1136,7 @@ function App() {
               </div>
 
               {/* Bottom-right: Interactive Nozzle Dock */}
-              <div className="nozzle-dock">
+              {session?.playerId && <div className="nozzle-dock">
                 <span className="nozzle-dock-title">NOZZLE SELECT [1–4]</span>
                 <div className="nozzle-dock-buttons">
                   {NOZZLES.map((n, idx) => {
@@ -1134,10 +1160,10 @@ function App() {
                     );
                   })}
                 </div>
-              </div>
+              </div>}
 
               {/* Bottom-center: Dirt Sonar button */}
-              <button
+              {session?.playerId && <button
                 type="button"
                 className={`sonar-action-btn ${washControls.current.highlight ? 'active' : ''}`}
                 onClick={() => {
@@ -1151,10 +1177,10 @@ function App() {
                 }}
               >
                 ✨ DIRT SONAR [Tab / H]
-              </button>
+              </button>}
 
               {/* Mobile on-screen touch overlay for Arrangement A on phones */}
-              {'ontouchstart' in window && !isPhoneControllerOnly && (
+              {'ontouchstart' in window && session?.playerId && !isPhoneControllerOnly && (
                 <div className="mobile-wash-overlay">
                   <div className="mobile-wash-overlay-controls">
                     <div
@@ -1168,6 +1194,7 @@ function App() {
                         washControls.current.moveZ = 0;
                         setWashInput(washControls.current);
                       }}
+                      onPointerCancel={() => {washControls.current.moveZ = 0;setWashInput(washControls.current);}}
                     >
                       <div className="mobile-stick-thumb" />
                     </div>
@@ -1202,6 +1229,7 @@ function App() {
                           washAudio.current.update(false, washControls.current.nozzle);
                           setWashInput(washControls.current);
                         }}
+                        onPointerCancel={() => {washControls.current.spray=false;washAudio.current.update(false,washControls.current.nozzle);setWashInput(washControls.current);}}
                       >
                         SPRAY
                       </button>
@@ -1340,6 +1368,7 @@ function App() {
                   {isHost && <button onClick={() => send({ type: 'lobby' })}>Lobby</button>}
                 </div>
               </div>
+              {'ontouchstart' in window && session?.playerId && <KartTouchControls onInput={value => {kartControls.current=value;setInput(value);}} />}
             </>
           )}
         </main>

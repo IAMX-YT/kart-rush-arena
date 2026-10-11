@@ -930,6 +930,21 @@
 }
 
 /* Responsive Overrides */
+.device-role-picker {border:0;padding:0;margin:24px 0;min-width:0}
+.device-role-picker legend {font-size:18px;font-weight:700;margin-bottom:14px}
+.device-role-options {display:grid;gap:12px}
+.device-role-option {display:flex;align-items:center;gap:16px;padding:18px;border:2px solid #394b60;border-radius:16px;background:#192a39;cursor:pointer;min-height:90px;box-sizing:border-box;margin:0}
+.device-role-option.selected {border-color:#38bdf8;background:#19374b}
+.device-role-option input {width:22px;height:22px;flex:0 0 22px;accent-color:#38bdf8;margin:0}
+.device-role-option span {display:grid;gap:7px}
+.device-role-option small {font-size:14px;line-height:1.5;color:#b9c8d8}
+.device-role-option:focus-within {outline:3px solid #f0c477;outline-offset:3px}
+.kart-touch-controls {position:absolute;z-index:5;bottom:14px;left:14px;right:14px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;touch-action:none}
+.kart-touch-button {grid-column:span 3;min-height:68px;border:2px solid #f0c47788;background:#17382dee;border-radius:16px;color:#fff0d4;font-weight:750;font-size:17px;touch-action:none;user-select:none}
+.kart-touch-button.gas {background:#f0c477;color:#17382d}
+.kart-touch-button.drift,.kart-touch-button.item,.kart-touch-button.respawn {grid-column:span 2;min-height:44px;font-size:12px}
+.kart-touch-button.held {background:#508964;color:#fff;transform:translateY(2px)}
+@media(orientation:landscape) and (max-height:550px){.kart-touch-controls{grid-template-columns:repeat(7,minmax(0,1fr))}.kart-touch-button,.kart-touch-button.drift,.kart-touch-button.item,.kart-touch-button.respawn {grid-column:span 1;min-height:70px;font-size:12px}}
 @media (max-width: 800px) {
   .arrangement-grid {
     grid-template-columns: 1fr;

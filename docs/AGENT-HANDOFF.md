@@ -1,5 +1,13 @@
 # Rushroom shared agent handoff
 
+## Current device-role work and hosting requirement
+
+- User now explicitly requires every join device to choose **Screen only**, **Controller only**, or **Screen + Controls** before joining. QR/deep links only supply the room code; they do not force the role. Screens consume no player slots or gameplay inputs, controllers render no game canvas, and same-device players get gameplay plus touch controls.
+- Create-room flow offers the same three arrangements; own-device/controller hosts receive a local player automatically. Host controller arrangement survives refresh. Same-device kart players now have multi-touch controls with release/cancel/blur handling.
+- Local Chrome test passed all three role choices, same-device Power Wash canvas + controls, screen-only read-only rendering, controller-only no canvas, readiness/start, and reload identity. Production build and 43/43 automated tests passed. Final public test/deployment will be recorded after publishing.
+- **Permanent hosting remains required by the user. Do not create another temporary sandbox as a substitute.** Awaiting personal VPS or Node-hosting access. Docker/Caddy deployment files already exist; GitHub Actions can build/test/deploy but are not permanent backend hosting.
+- **Do not use IAMX-YT GitHub Actions.** The alternate GitHub token provided on this turn returned HTTP 401 `Bad credentials`; account identity could not be established. No Actions workflows were created or run.
+
 Updated: 2026-10-12 (Asia/Kolkata). This file is the shared progress record; Git history is the source of truth for committed work. Update it with your own completed changes and actual verification before handing work over.
 
 ## Shared product decisions

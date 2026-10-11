@@ -1,9 +1,9 @@
 const defaultRemoteOrigin = 'https://sb-2cf1zfkzsyid.vercel.run';
-const isLocalhost =
+const isHostedFrontend =
   typeof window !== 'undefined' &&
-  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  window.location.hostname.endsWith('.vercel.app');
 
 export const SERVER_ORIGIN =
   (import.meta as ImportMeta & { env: { VITE_SERVER_ORIGIN?: string } }).env.VITE_SERVER_ORIGIN ||
-  (isLocalhost ? '' : defaultRemoteOrigin);
+  (isHostedFrontend ? defaultRemoteOrigin : '');
 
