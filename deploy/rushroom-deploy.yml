@@ -1,0 +1,43 @@
+name: Deploy Rushroom VPS
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Source branch or commit in IAMX-YT/kart-rush-arena
+        default: main
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: rushroom-vps-deployment
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: IAMX-YT/kart-rush-arena
+          ref: ${{ inputs.source_ref }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install -g pnpm@11.25.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test && pnpm build
+      - name: Activate VPS release
+        env:
+          RUSH_DEPLOY_KEY: ${{ secrets.RUSHROOM_DEPLOY_KEY }}
+          RUSH_KNOWN_HOST: ${{ vars.RUSHROOM_KNOWN_HOST }}
+          RUSH_HOST: ${{ vars.RUSHROOM_HOST }}
+          RUSH_USER: ${{ vars.RUSHROOM_USER }}
+        run: |
+          install -m 700 -d "$RUNNER_TEMP/rushroom-ssh"
+          printf '%s\n' "$RUSH_DEPLOY_KEY" > "$RUNNER_TEMP/rushroom-ssh/key"
+          chmod 600 "$RUNNER_TEMP/rushroom-ssh/key"
+          printf '%s\n' "$RUSH_KNOWN_HOST" > "$RUNNER_TEMP/rushroom-ssh/known_hosts"
+          trap 'rm -f "$RUNNER_TEMP/rushroom-ssh/key"' EXIT
+          tar -czf "$RUNNER_TEMP/rushroom.tar.gz" build/server.mjs dist
+          ssh -T -i "$RUNNER_TEMP/rushroom-ssh/key" -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/rushroom-ssh/known_hosts" "$RUSH_USER@$RUSH_HOST" < "$RUNNER_TEMP/rushroom.tar.gz"

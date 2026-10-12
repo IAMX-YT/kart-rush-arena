@@ -34,4 +34,15 @@ Vercel now supports WebSockets in Functions (Beta): https://vercel.com/docs/func
 
 The alternate GitHub token identifies `thatsego-account-manger`; API identity does not establish that it is a temporary account. No Actions workflow was created or run. GitHub repository access does not supply VPS or hosting credentials. Personal VPS/Node-hosting selection and access are still pending, so permanent hosting has not been deployed.
 
-On October 12 the user selected **a different VPS / Railway / Render**, saying they will provide details. Do not use `145.223.33.135` for Rushroom. The chosen new host/project and its deployment access are still needed. Both the old sandbox `/health` and the public frontend `/health` return HTTP 410.
+On October 12 the user supplied SSH access to **65.20.87.31** (Cloudways master account), authorized creating the required setup, and requested GitHub Actions activation. Do not use `145.223.33.135` for Rushroom.
+
+## Cloudways service and deployment automation
+
+- Runtime: isolated Node 24.21.0, verified against the official SHA256 digest, under `/home/master/rushroom/runtime`.
+- Backend: `/home/master/rushroom/current`, user systemd unit `rushroom.service`, enabled with `Restart=on-failure`. User lingering is enabled, so it starts without an interactive SSH login. Tested active after a service restart; an actual host reboot has not been performed.
+- Listener: `127.0.0.1:3210`, online mode, accepts frontend Origin `https://rushroom-games.vercel.app`. Other server applications/services remain separate.
+- Alternate-account deployment repository: `thatsego-account-manger/rushroom-deploy`. The real workflow lives there, not in IAMX-YT. Template: `deploy/rushroom-deploy.yml`; VPS activation script: `deploy/vps-deploy.sh`.
+- Manual Actions deployment checks out the shared source repository, builds/tests it, and streams the release over SSH using a generated key. Its server authorization is restricted to the Rushroom deployment command, with forwarding and PTY disabled. The private key is sealed into GitHub Actions Secrets; SSH login passwords/PATs are not stored in the repository or VPS files.
+- Deployments defer when rooms exist and roll back to the previous release if backend health fails. Rooms remain process-memory state and do not survive a service restart.
+
+**Public routing blocker:** this Cloudways master user cannot use sudo, read/modify the root-owned Nginx virtual host, or read its TLS private key. Cloudways panel/API access or provider configuration of a separate application/domain is required to proxy public HTTPS/WSS to `127.0.0.1:3210`. SSH authorization does not provide those panel permissions. No existing WordPress route/site was replaced. Keep the frontend on its current configuration until a valid public endpoint is verified; the old public backend continues to return HTTP 410.

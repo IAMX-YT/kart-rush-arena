@@ -1,0 +1,21 @@
+[Unit]
+Description=Rushroom multiplayer backend
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/master/rushroom/current
+ExecStart=/home/master/rushroom/runtime/bin/node build/server.mjs
+Environment=NODE_ENV=production
+Environment=MODE=online
+Environment=PORT=3210
+Environment=BIND_HOST=127.0.0.1
+Environment=PUBLIC_ORIGIN=https://rushroom-games.vercel.app
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=default.target
