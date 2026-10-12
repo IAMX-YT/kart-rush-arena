@@ -930,6 +930,57 @@
 }
 
 /* Responsive Overrides */
+/* Calm landing page: real gameplay, clear actions and less decorative chrome. */
+.home {max-width:1320px;padding:0 5%}
+.home .hero {grid-template-columns:.9fr 1.1fr;gap:64px;min-height:520px;padding:64px 0 56px}
+.home .hero h1 {font-size:clamp(48px,5.4vw,76px);letter-spacing:-3px;line-height:1.06;margin:22px 0}
+.home .hero-copy>p {max-width:400px;font-size:17px;line-height:1.7}
+.home .hero-copy>.hero-note {font-size:12px;color:#9eaea7;margin:24px 0 0;max-width:360px}
+.home .hero-art {display:block;min-height:0;aspect-ratio:1.23;border-radius:24px;overflow:hidden;background:#23362d;border:1px solid #52645155;box-shadow:0 25px 75px #0003}
+.featured-game-image {width:100%;height:100%;object-fit:cover;display:block}
+.featured-game-caption {position:absolute;inset:auto 0 0;padding:60px 28px 26px;background:linear-gradient(transparent,#0b1813ee);display:grid;gap:8px}
+.featured-game-caption span {font-size:10px;letter-spacing:2px;color:#e9c982;font-weight:750}
+.featured-game-caption b {font-size:23px;letter-spacing:-.6px}
+.home .section-heading {margin:0 0 24px}
+.home .section-heading h2,.home .steps h2 {font-size:28px;margin:0;letter-spacing:-.8px}
+.home .card-art {height:230px;background:#21342b}
+.home .card-art:before {display:none}
+.home .world-card-art {width:100%;height:100%;object-fit:cover;position:static;transform:none}
+.home .game-card {background:#1e3028;border-color:#49634f66;border-radius:18px}
+.home .card-copy {padding:24px;min-height:130px}
+.home .card-copy p {font-size:14px;line-height:1.6;color:#aabbb0}
+.home .card-copy button {background:#e9c982;color:#15261e;width:48px;height:48px;flex-shrink:0}
+.home .players-tag {background:#10251ee6;letter-spacing:.2px;font-size:11px;bottom:14px;right:14px}
+.home .steps {padding:64px 0;background:none;border:0}
+.home .arrangement-grid {margin-top:25px;gap:24px}
+.home .arrangement-card {padding:24px;background:transparent;border:1px solid #4c63504d;border-radius:16px;gap:12px}
+.home .arrangement-card b {position:static;font-size:17px;display:block;margin:0;color:#edf1f6}
+.home .arrangement-card span {position:static;display:block}
+.home .arrangement-card>span:last-child {font-size:14px;line-height:1.6;color:#aabbb0}
+.setup-number {font-size:12px;color:#e9c982;font-weight:800;letter-spacing:1px}
+.race-screen:has(.wash-canvas) .wash-title-card {padding:14px 18px;min-width:200px;max-width:230px;background:#11241bcc;border:1px solid #d4e6d333;box-shadow:none}
+.race-screen:has(.wash-canvas) .wash-title-card h2 {font-size:15px;letter-spacing:0;margin:0 0 10px}
+.race-screen:has(.wash-canvas) .wash-job-sub {margin-top:7px;font-size:11px}
+.wash-game-menu {position:absolute;z-index:15;top:85px;right:20px;width:300px;max-width:calc(100% - 24px);max-height:calc(100% - 110px);overflow:auto;background:#14251ef5;border:1px solid #6c846b;border-radius:16px;padding:18px;box-shadow:0 16px 50px #0006}
+.game-menu-heading {display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.game-menu-heading button {font-size:24px;width:40px;height:40px}
+.wash-game-menu>button {display:flex;align-items:center;justify-content:space-between;min-height:48px;width:100%;border-top:1px solid #50644877;text-align:left;font-size:14px}
+.wash-game-menu>small {display:block;color:#a6b6a9;font-size:11px;margin:10px 0}
+.wash-game-menu details {border-top:1px solid #50644877;padding:14px 0;font-size:14px}
+.wash-game-menu summary {cursor:pointer;min-height:24px}
+.wash-game-menu details p {font-size:13px;line-height:1.7;margin-bottom:0}
+.menu-object-list {display:grid;gap:12px;margin-top:16px;font-size:12px}
+.menu-object-list>div {display:flex;justify-content:space-between;gap:12px}
+@media(max-width:850px){.home .hero {gap:30px;padding:40px 0;grid-template-columns:1fr 1fr}.home .hero h1 {font-size:50px}.home .hero-art {aspect-ratio:.9}.home .actions {flex-wrap:wrap}.home .card-copy {padding:20px}}
+@media(max-width:600px){
+ .home {padding:0 20px}.home .hero {grid-template-columns:1fr;gap:28px;padding:36px 0 40px;min-height:0}
+ .home .hero h1 {font-size:52px;margin:18px 0;letter-spacing:-2px}.home .hero-copy>p {font-size:15px;margin:18px 0 24px}
+ .home .hero-copy>.hero-note {margin-top:18px;font-size:11px}.home .actions {flex-wrap:nowrap;gap:10px}.home .actions button {padding:15px 18px;font-size:14px}.home .primary span {margin-left:8px}
+ .home .hero-art {aspect-ratio:1.45;border-radius:18px}.featured-game-caption {padding:45px 20px 20px}.featured-game-caption b {font-size:19px}
+ .home .game-grid {grid-template-columns:1fr;gap:20px}.home .section-heading h2,.home .steps h2 {font-size:24px}.home .section-heading {gap:12px}.home .text-button {white-space:nowrap}
+ .home .card-art {height:210px}.home .card-copy {min-height:112px}.home .card-copy h3 {font-size:19px}.home .card-copy p {font-size:13px}.home .steps {padding:40px 0}.home .arrangement-grid {gap:12px}
+ .wash-game-menu {top:80px;right:12px;width:280px}.race-screen:has(.wash-canvas) .wash-title-card {min-width:150px}
+}
 .device-role-picker {border:0;padding:0;margin:24px 0;min-width:0}
 .device-role-picker legend {font-size:18px;font-weight:700;margin-bottom:14px}
 .device-role-options {display:grid;gap:12px}

@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import QRCode from 'qrcode';
 import { useNetwork } from './network';
-import { HeroKart, HeroWasher } from './visuals';
 import { games } from '../shared/registry';
 import { COLORS, type Input, neutral, type RoomState } from '../shared/types';
 import { ranking, LAPS } from '../shared/simulation';
@@ -18,10 +17,8 @@ import { WashController } from './washController';
 import { KartTouchControls } from './kartTouchControls';
 import './style.css';
 
-const WorldPreview = React.lazy(() => import('./scene').then(m => ({ default: m.WorldPreview })));
 const GameScene = React.lazy(() => import('./scene').then(m => ({ default: m.GameScene })));
 const PowerWashScene = React.lazy(() => import('./washScene').then(m => ({ default: m.PowerWashScene })));
-const PowerWashPreview = React.lazy(() => import('./washScene').then(m => ({ default: m.PowerWashPreview })));
 
 type PlayArrangement = 'this_device' | 'tv_display' | 'phone_controller';
 
@@ -72,6 +69,7 @@ function App() {
   // Split-screen state (Independent per display)
   const [localSplit, setLocalSplit] = useState(initialPage === 'screen');
   const [showSplitMenu, setShowSplitMenu] = useState(false);
+  const [showGameMenu, setShowGameMenu] = useState(false);
   const [requestOtherSplit, setRequestOtherSplit] = useState(false);
   const [activeToast, setActiveToast] = useState<string | null>(null);
   const [targetedObject, setTargetedObject] = useState<{ name: string; percent: number } | null>(null);
@@ -477,16 +475,13 @@ function App() {
         <main className="home">
           <section className="hero">
             <div className="hero-copy">
-              <span className="eyebrow">
-                <i /> BROWSER MULTIPLAYER PLAYGROUND
-              </span>
+              <span className="eyebrow">YOUR FRIENDS. YOUR ROOM.</span>
               <h1>
-                Power Wash.<br />
-                Race. <em>Together.</em>
+                Play together.<br />
+                <em>Anywhere.</em>
               </h1>
               <p>
-                Turn any TV, laptop or phone into a shared arena.<br />
-                Grab your friends. Play in person or from different homes.
+                One phone or a whole living room. Pick a game, share your room code, and bring your friends.
               </p>
 
               <div className="actions">
@@ -498,21 +493,12 @@ function App() {
                 </button>
               </div>
 
-              <div className="hero-meta">
-                <span>◉ Original 3D Environments</span>
-                <span>◎ No App or Account Required</span>
-                <span>⌁ TV + Phone Controllers</span>
-              </div>
+              <p className="hero-note">No downloads. Choose your screen and controls when you join.</p>
             </div>
 
             <div className="hero-art">
-              <span className="art-chip chip-top">NEW 3D CO-OP GAME</span>
-              <React.Suspense fallback={<HeroWasher />}>
-                <PowerWashPreview />
-              </React.Suspense>
-              <span className="art-chip chip-bottom">
-                <b>02</b> POWER WASH SIMULATOR 2 <span>↗</span>
-              </span>
+              <img className="featured-game-image" src="/wash-world.png" alt="Power Wash gameplay in a sunny garden with a sports car" />
+              <div className="featured-game-caption"><span>CO-OP CLEANING</span><b>Power Wash Simulator 2</b></div>
             </div>
           </section>
 
@@ -520,11 +506,10 @@ function App() {
           <section className="library">
             <div className="section-heading">
               <div>
-                <span className="eyebrow">THE ROSTER</span>
-                <h2>Good friends. Great games.</h2>
+                <h2>Pick your next game.</h2>
               </div>
               <button className="text-button" onClick={() => setPage('library')}>
-                Explore the library →
+                All games →
               </button>
             </div>
 
@@ -532,20 +517,14 @@ function App() {
               {/* Game 1: Power Wash Simulator 2 */}
               <article className="game-card">
                 <div className="card-art">
-                  <div className="wash-card-art">
-                    <span className="wash-art-water-jet">💦</span>
-                    <span className="wash-art-clean-tag">100% ORIGINAL ART</span>
-                  </div>
-                  <span className="game-tag" style={{ color: '#38bdf8' }}>
-                    PLAYABLE NOW
-                  </span>
+                  <img className="world-card-art" src="/wash-world.png" alt="Pressure washing a sports car in the garden" loading="lazy" />
                   <span className="players-tag">1–4 players</span>
                 </div>
                 <div className="card-copy">
                   <div>
                     <h3>Power Wash Simulator 2</h3>
                     <p>
-                      Co-op cleaning simulation. Grab your pressure washer and team up to restore a dirty garden courtyard to pristine glory.
+                      Slow down. Spray the dirt away. Clean the garden together.
                     </p>
                   </div>
                   <button
@@ -568,14 +547,13 @@ function App() {
                     src="/sunburst-world.png"
                     alt="Original 3D miniature garden circuit"
                   />
-                  <span className="game-tag">PLAYABLE NOW</span>
                   <span className="players-tag">1–8 players</span>
                 </div>
                 <div className="card-copy">
                   <div>
                     <h3>Kart Rush Arena</h3>
                     <p>
-                      Big corners. Tiny karts. Brilliant chaos. Race your friends around Sunburst Circuit.
+                      Race your friends around the twists of Sunburst Circuit.
                     </p>
                   </div>
                   <button
@@ -594,27 +572,27 @@ function App() {
 
           {/* 3 PLAY ARRANGEMENTS SECTION */}
           <section className="steps">
-            <span className="eyebrow">THE THREE DEVICE ARRANGEMENTS</span>
+            <h2>Your setup. Your choice.</h2>
             <div className="arrangement-grid">
               <div className="arrangement-card">
-                <span className="arrangement-icon">📱</span>
-                <b>Arrangement A — Play on this device</b>
+                <span className="setup-number">01</span>
+                <b>Just your phone or PC</b>
                 <span>
-                  Mobile touch controls or PC keyboard/mouse. Your view and controls live on the same phone, tablet or monitor.
+                  Your game and controls on one device.
                 </span>
               </div>
               <div className="arrangement-card">
-                <span className="arrangement-icon">📺</span>
-                <b>Arrangement B — Shared TV + Phone Controllers</b>
+                <span className="setup-number">02</span>
+                <b>One TV. Everyone plays.</b>
                 <span>
-                  The TV renders 2 to 4 split viewports. Each player scans a QR code and holds their phone as a tactile gamepad.
+                  Share the big screen. Use your phones as controllers.
                 </span>
               </div>
               <div className="arrangement-card">
-                <span className="arrangement-icon">🌐</span>
-                <b>Arrangement C — Different Homes, Flexible Devices</b>
+                <span className="setup-number">03</span>
+                <b>Different homes. Same room.</b>
                 <span>
-                  One friend uses TV + phone at their house, while another joins on mobile from across the city.
+                  Join with a room code. Each person chooses their own view.
                 </span>
               </div>
             </div>
@@ -631,17 +609,14 @@ function App() {
             {games.map(g => (
               <article className="library-entry" key={g.id}>
                 {g.id === 'power-wash' ? (
-                  <div className="wash-card-art" style={{ height: 160, borderRadius: 12 }}>
-                    <span style={{ fontSize: 50 }}>💦</span>
-                  </div>
+                  <img src="/wash-world.png" alt="Power Wash gameplay" />
                 ) : (
                   <img src={g.thumbnail} alt="" />
                 )}
                 <h2>{g.name}</h2>
                 <p>{g.description}</p>
                 <small>
-                  {g.minPlayers}–{g.maxPlayers} players ·{' '}
-                  {g.available ? 'Playable Now' : 'In Development'}
+                  {g.minPlayers}–{g.maxPlayers} players
                 </small>
                 <button
                   className="primary"
@@ -1038,13 +1013,7 @@ function App() {
               {/* Top HUD */}
               <div className="race-top">
                 <div className="wash-title-card">
-                  <span className="eyebrow">POWER WASH SIMULATOR 2</span>
-                  <h2>SUBURBAN RESTORATION</h2>
-                  <div className="job-stars">
-                    {[20, 40, 60, 80, 98].map((t, idx) => (
-                      <span key={idx} className={`star ${(room.wash?.jobPercent || 0) >= t ? 'filled' : ''}`}>★</span>
-                    ))}
-                  </div>
+                  <h2>Garden cleanup</h2>
                   <div className="progress-container">
                     <div className="progress-bar-bg">
                       <div
@@ -1055,21 +1024,13 @@ function App() {
                     <span className="progress-text">{room.wash.jobPercent}%</span>
                   </div>
                   <div className="wash-job-sub">
-                    <span>🧼 {CLEANABLE_OBJECTS.filter(o => room.wash?.objects[o.id]?.completed).length}/{CLEANABLE_OBJECTS.length} Cleaned</span>
-                    <span>⏱ {Math.floor(room.wash.time / 60)}:{String(Math.floor(room.wash.time) % 60).padStart(2, '0')}</span>
+                    <span>{CLEANABLE_OBJECTS.filter(o => room.wash?.objects[o.id]?.completed).length}/{CLEANABLE_OBJECTS.length} objects clean</span>
                   </div>
-                  {statusPill}
                 </div>
 
                 <div className="race-tools">
-                  <button onClick={toggleSound}>
-                    {sound ? '🔊' : '🔇'}
-                  </button>
-                  <button onClick={() => setQuality(quality === 'high' ? 'low' : 'high')}>
-                    {quality === 'high' ? '✦ HQ' : '◇ LQ'}
-                  </button>
-                  <button onClick={() => setShowSplitMenu(!showSplitMenu)}>
-                    ⛶ {localSplit ? 'Split' : 'Solo'}
+                  <button aria-expanded={showSplitMenu} onClick={() => {setShowSplitMenu(!showSplitMenu);setShowGameMenu(false);}}>
+                    Split view
                   </button>
                   <button aria-label="Fullscreen" onClick={fullscreen}>
                     ⛶
@@ -1079,9 +1040,19 @@ function App() {
                       {room.wash.phase === 'paused' ? '▶ Resume' : '⏸ Pause'}
                     </button>
                   )}
-                  {isHost && <button onClick={() => send({ type: 'lobby' })}>↩ Lobby</button>}
+                  <button aria-expanded={showGameMenu} aria-controls="wash-game-menu" onClick={() => {setShowGameMenu(!showGameMenu);setShowSplitMenu(false);}}>Menu</button>
                 </div>
               </div>
+
+              {showGameMenu && <aside className="wash-game-menu" id="wash-game-menu" aria-label="Game menu">
+                <div className="game-menu-heading"><b>Game menu</b><button aria-label="Close game menu" onClick={() => setShowGameMenu(false)}>×</button></div>
+                <button onClick={toggleSound}>Sound <b>{sound ? 'On' : 'Off'}</b></button>
+                <button onClick={() => setQuality(quality === 'high' ? 'low' : 'high')}>Graphics <b>{quality === 'high' ? 'High' : 'Low'}</b></button>
+                <small>{status}{status === 'Connected' ? ` · ${latency} ms` : ''}</small>
+                <details><summary>Objects to clean</summary><div className="menu-object-list">{CLEANABLE_OBJECTS.map(def => <div key={def.id}><span>{def.name}</span><b>{room.wash?.objects[def.id]?.percent || 0}%</b></div>)}</div></details>
+                {session?.playerId && !('ontouchstart' in window) && <details><summary>Keyboard controls</summary><p>WASD to walk · Arrow keys or drag to aim · Space to spray · 1–4 for nozzles · H to highlight dirt.</p></details>}
+                {isHost && <button onClick={() => {setShowGameMenu(false);send({type:'lobby'});}}>Return to lobby →</button>}
+              </aside>}
 
               {/* Independent Split Menu Dropdown */}
               {showSplitMenu && (
@@ -1117,7 +1088,6 @@ function App() {
               {targetedObject && targetedObject.name && (
                 <div className="wash-target-card">
                   <div className="target-card-top">
-                    <span className="target-icon">🫧</span>
                     <span className="target-name">{targetedObject.name}</span>
                     <span className="target-percent">{targetedObject.percent}%</span>
                   </div>
@@ -1130,34 +1100,9 @@ function App() {
                 </div>
               )}
 
-              {/* Left HUD: Objects checklist with mini progress bars */}
-              <div className="wash-hud" style={{ top: 160 }}>
-                <div className="objects-hud-list">
-                  {CLEANABLE_OBJECTS.map(def => {
-                    const st = room.wash?.objects[def.id];
-                    const pct = st?.percent || 0;
-                    return (
-                      <div
-                        key={def.id}
-                        className={`object-item ${st?.completed ? 'completed' : ''}`}
-                      >
-                        <span className="obj-icon">{st?.completed ? '✓' : '○'}</span>
-                        <div className="object-item-info">
-                          <span>{def.name}</span>
-                          <div className="obj-mini-progress">
-                            <div className="obj-mini-fill" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                        <b>{pct}%</b>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
               {/* Bottom-right: Interactive Nozzle Dock */}
               {session?.playerId && <div className="nozzle-dock">
-                <span className="nozzle-dock-title">NOZZLE SELECT [1–4]</span>
+                <span className="nozzle-dock-title">Nozzles</span>
                 <div className="nozzle-dock-buttons">
                   {NOZZLES.map((n, idx) => {
                     const isActive = washControls.current.nozzle === idx;
@@ -1196,7 +1141,7 @@ function App() {
                   }, 2500);
                 }}
               >
-                ✨ DIRT SONAR [Tab / H]
+                Highlight dirt
               </button>}
 
               {/* Mobile on-screen touch overlay for Arrangement A on phones */}
@@ -1232,7 +1177,7 @@ function App() {
                           }, 2500);
                         }}
                       >
-                        ✨ Highlight Dirt
+                        Highlight dirt
                       </button>
                       <button
                         type="button"
@@ -1258,11 +1203,6 @@ function App() {
               )}
 
               {/* PC Desktop Keyboard guide */}
-              {session?.playerId && !('ontouchstart' in window) && (
-                <div className="keyboard-hint">
-                  WASD: Walk · ← → ↑ ↓: Aim · Space: Spray · 1–4: Nozzles · H: Highlight Dirt
-                </div>
-              )}
 
               {room.wash.phase === 'countdown' && (
                 <div className="countdown">
@@ -1467,7 +1407,6 @@ function App() {
       {!room && (
         <footer>
           <span>rushroom — made for playing together.</span>
-          <span>Original games. Instant co-op & rivalries.</span>
           <a href="/models/CREDITS.md" target="_blank" rel="noreferrer">3D asset credits</a>
         </footer>
       )}

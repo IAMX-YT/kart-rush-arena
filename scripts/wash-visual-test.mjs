@@ -23,8 +23,11 @@ try {
  if(page.room.wash.objects.car.cleanedCells<=before)console.log(JSON.stringify({player:page.room.wash.players[0],sentInputs}));
  assert(page.room.wash.objects.car.cleanedCells>before,'Spray did not clean actual car');
  await page.screenshot({path:'test-results/wash-realism-cleaning.png'});
- await page.locator('.wash-canvas').screenshot({path:'public/wash-world.png'});
+ const hideHud=await page.addStyleTag({content:'.race-screen > :not(.wash-canvas) {visibility:hidden!important}'});
+ await page.locator('.wash-canvas canvas').screenshot({path:'public/wash-world.png'});
+ await hideHud.evaluate(el=>el.remove());
  assert.deepEqual(errors,[]);
  console.log(JSON.stringify({passed:true,carCleanedCells:page.room.wash.objects.car.cleanedCells,errors,screenshots:['wash-realism-dirty.png','wash-realism-cleaning.png']}));
- await page.getByRole('button',{name:/Lobby/}).last().click();
+ await page.getByRole('button',{name:'Menu',exact:true}).click();
+ await page.getByRole('button',{name:'Return to lobby',exact:false}).click();
 } finally {await browser.close();}
