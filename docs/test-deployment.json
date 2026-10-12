@@ -10,14 +10,14 @@
   "vpsSourceCommit": "3cf748b",
   "projectId": "prj_hjedWVWN9lnyocpRHel43VJhuDuG",
   "frontend": "https://rushroom-games.vercel.app",
-  "frontendDeploymentId": "dpl_Bojvi3s9GBRoj5j4UJKByeDNwPoz",
-  "sourceCommit": "1142b34",
+  "frontendDeploymentId": "dpl_77BvFKieMeZ3STuEBFw8XacdVfG7",
+  "sourceCommit": "da6a06c",
   "currentBackendHttpStatus": 200,
   "actionsRepository": "thatsego-account-manger/rushroom-deploy",
   "actionsRun": "https://github.com/thatsego-account-manger/rushroom-deploy/actions/runs/38188011628",
   "actionsAttempt": 2,
   "actionsConclusion": "success",
-  "verificationScope": "Actual VPS and public WSS gameplay inputs for both games; public Chrome device-role/create/join/start/reload-resume tests for both games; service restart recovery; 330000ms public session with one connection renewal and preserved identity/progress.",
+  "verificationScope": "Latest frontend: public Chrome controller tests for BOTH games at four landscape sizes, portrait rotate gate, actual game start, simultaneous touch, cancellation, no overflow/overlap and bounded input rate. Build and 45 tests passed; local visual cleaning test passed. Prior hosting verification: public device-role/reload-resume, service restart and 330000ms session preserving identity/progress.",
   "longSession": {"passed":true,"durationMs":330000,"connections":2,"identityPreserved":true,"cleaningPreserved":true},
   "limitations": "Rooms reset on VPS service restart. Actual VPS reboot and physical-phone GPU performance have not been tested. Vercel relay connections reconnect/resume when their function duration ends."
 }
