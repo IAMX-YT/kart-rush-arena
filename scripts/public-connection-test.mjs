@@ -33,6 +33,7 @@ try {
  await phone.locator('form').getByRole('button',{name:'Join Room',exact:false}).waitFor({timeout:15000});
  await phone.locator('form').getByRole('button',{name:'Join Room',exact:false}).click();
  await until(()=>host.roomState.players.some(p=>p.name==='Connection Test'),'phone joined shared room');
+ await phone.setViewportSize({width:844,height:390});
  const playerId=host.roomState.players.find(p=>p.name==='Connection Test').id;
  await phone.getByRole('button',{name:'Ready to Clean',exact:false}).click();
  await until(()=>host.roomState.players.find(p=>p.id===playerId)?.ready,'phone readiness');
@@ -61,7 +62,7 @@ try {
    await until(()=>Math.abs(host.roomState.wash.players.find(p=>p.id===session.playerId).x-before)>.1,'single-phone host joystick movement');
    await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
  }
- const controllerButton=()=>phone.getByRole('button',{name:game==='power-wash'?/spray/i:'GAS'}).first();
+ const controllerButton=()=>phone.getByRole('button',{name:game==='power-wash'?'Spray':'Accelerate',exact:true}).first();
  await controllerButton().waitFor({timeout:20000});
  await both.locator('canvas').first().waitFor({timeout:30000});
  await both.locator(game==='power-wash'?'.mobile-btn-spray':'.kart-touch-controls').waitFor({timeout:30000});

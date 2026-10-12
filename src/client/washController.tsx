@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { NOZZLES, type WashInput, neutralWashInput } from '../shared/powerwash';
 import { type RoomState, type SplitConsentRequest } from '../shared/types';
+import {controllerFullscreen} from './controllerOrientation';
 
 interface WashControllerProps {
   room: RoomState;
@@ -20,7 +21,8 @@ export function WashController({
   const me = room.players.find(p => p.id === playerId);
   const myWashPlayer = room.wash?.players.find(p => p.id === playerId);
 
-  const inputRef = useRef<WashInput>(neutralWashInput());
+  const callback=useRef(onInput);callback.current=onInput;
+  const inputRef = useRef<WashInput>({...neutralWashInput(),yaw:myWashPlayer?.yaw||0,pitch:myWashPlayer?.pitch||0,nozzle:1});
   const [sprayToggle, setSprayToggle] = useState(false);
   const [activeNozzle, setActiveNozzle] = useState(1);
   const [highlightActive, setHighlightActive] = useState(false);
@@ -30,6 +32,10 @@ export function WashController({
   const joystickRef = useRef<HTMLDivElement>(null);
   const [joystickThumb, setJoystickThumb] = useState({ x: 0, y: 0 });
   const joystickTouchId = useRef<number | null>(null);
+  const moveOrigin=useRef<{x:number;y:number}|null>(null);
+  const [moveAnchor,setMoveAnchor]=useState<{x:number;y:number}|null>(null);
+  const sprayPointer=useRef<number|null>(null);
+  const highlightTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
 
   // Look pad state
   const lookPadRef = useRef<HTMLDivElement>(null);
@@ -41,14 +47,17 @@ export function WashController({
 
   function updateInput(partial: Partial<WashInput>) {
     inputRef.current = { ...inputRef.current, ...partial };
-    onInput(inputRef.current);
+    callback.current(inputRef.current);
   }
 
   // Handle Joystick (Left thumb - Movement)
   function handleJoystickStart(e: React.PointerEvent<HTMLDivElement>) {
     e.preventDefault();
+    if(joystickTouchId.current!==null)return;
     e.currentTarget.setPointerCapture(e.pointerId);
     joystickTouchId.current = e.pointerId;
+    moveOrigin.current={x:e.clientX,y:e.clientY};
+    const rect=e.currentTarget.getBoundingClientRect();setMoveAnchor({x:e.clientX-rect.left,y:e.clientY-rect.top});
     updateJoystickPos(e.clientX, e.clientY);
   }
 
@@ -60,6 +69,7 @@ export function WashController({
   function handleJoystickEnd(e: React.PointerEvent<HTMLDivElement>) {
     if (joystickTouchId.current === e.pointerId) {
       joystickTouchId.current = null;
+      moveOrigin.current=null;setMoveAnchor(null);
       setJoystickThumb({ x: 0, y: 0 });
       updateInput({ moveX: 0, moveZ: 0 });
     }
@@ -68,9 +78,9 @@ export function WashController({
   function updateJoystickPos(clientX: number, clientY: number) {
     if (!joystickRef.current) return;
     const rect = joystickRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const maxRadius = rect.width / 2 - 15;
+    const centerX = moveOrigin.current?.x ?? rect.left + rect.width / 2;
+    const centerY = moveOrigin.current?.y ?? rect.top + rect.height / 2;
+    const maxRadius = Math.min(rect.width,rect.height)*.3;
 
     let dx = clientX - centerX;
     let dy = clientY - centerY;
@@ -92,6 +102,7 @@ export function WashController({
   // Handle Look Pad (Right thumb - Aiming)
   function handleLookStart(e: React.PointerEvent<HTMLDivElement>) {
     e.preventDefault();
+    if(lookTouchId.current!==null)return;
     e.currentTarget.setPointerCapture(e.pointerId);
     lookTouchId.current = e.pointerId;
     lookLastPos.current = { x: e.clientX, y: e.clientY };
@@ -121,6 +132,9 @@ export function WashController({
   // Handle Spray Press & Toggle
   function handleSprayDown(e: React.PointerEvent<HTMLButtonElement>) {
     e.preventDefault();
+    if(sprayPointer.current!==null)return;
+    sprayPointer.current=e.pointerId;
+    e.currentTarget.setPointerCapture(e.pointerId);
     if (sprayToggle) {
       // In toggle mode, tap switches on/off
       const next = !isSpraying;
@@ -137,6 +151,8 @@ export function WashController({
   }
 
   function handleSprayUp(e: React.PointerEvent<HTMLButtonElement>) {
+    if(sprayPointer.current!==e.pointerId)return;
+    sprayPointer.current=null;
     if (!sprayToggle) {
       setIsSpraying(false);
       updateInput({ spray: false });
@@ -153,7 +169,8 @@ export function WashController({
     setHighlightActive(true);
     updateInput({ highlight: true });
     if ('vibrate' in navigator) navigator.vibrate([15, 30, 15]);
-    setTimeout(() => {
+    if(highlightTimer.current)clearTimeout(highlightTimer.current);
+    highlightTimer.current=setTimeout(() => {
       setHighlightActive(false);
       updateInput({ highlight: false });
     }, 2500);
@@ -166,16 +183,24 @@ export function WashController({
       joystickTouchId.current = null;
       lookTouchId.current = null;
       lookLastPos.current = null;
-      if (!sprayToggle) setIsSpraying(false);
-      updateInput({ moveX: 0, moveZ: 0, spray: sprayToggle ? isSpraying : false });
+      moveOrigin.current=null;setMoveAnchor(null);sprayPointer.current=null;
+      setIsSpraying(false);
+      updateInput({ moveX: 0, moveZ: 0, spray: false });
     }
+    const visibility=()=>{if(document.hidden)releaseAll();};
     window.addEventListener('blur', releaseAll);
     window.addEventListener('pointercancel', releaseAll);
+    window.addEventListener('resize', releaseAll);
+    document.addEventListener('visibilitychange',visibility);
     return () => {
       window.removeEventListener('blur', releaseAll);
       window.removeEventListener('pointercancel', releaseAll);
+      window.removeEventListener('resize',releaseAll);
+      document.removeEventListener('visibilitychange',visibility);
+      if(highlightTimer.current)clearTimeout(highlightTimer.current);
+      callback.current({...inputRef.current,moveX:0,moveZ:0,spray:false,highlight:false});
     };
-  }, [sprayToggle, isSpraying]);
+  }, []);
 
   return (
     <div className="wash-controller-container">
@@ -197,6 +222,7 @@ export function WashController({
           </span>
         </div>
         {statusPill}
+        <button className="remote-fullscreen" aria-label="Controller fullscreen" onClick={controllerFullscreen}>⛶</button>
       </header>
 
       {/* Split-Screen Request Notification on Phone Controller */}
@@ -232,14 +258,17 @@ export function WashController({
           onPointerMove={handleJoystickMove}
           onPointerUp={handleJoystickEnd}
           onPointerCancel={handleJoystickEnd}
+          onLostPointerCapture={handleJoystickEnd}
+          aria-label="Move pad"
         >
           <div
             className="virtual-joystick-thumb"
             style={{
-              transform: `translate(${joystickThumb.x}px, ${joystickThumb.y}px)`,
+              left:moveAnchor?.x??'50%',top:moveAnchor?.y??'50%',
+              transform: `translate(calc(-50% + ${joystickThumb.x}px), calc(-50% + ${joystickThumb.y}px))`,
             }}
           />
-          <span className="joystick-guide-label">MOVE</span>
+          <span className="joystick-guide-label">MOVE <small>Drag anywhere</small></span>
         </section>
 
         {/* Right Thumb Look Pad */}
@@ -250,6 +279,8 @@ export function WashController({
           onPointerMove={handleLookMove}
           onPointerUp={handleLookEnd}
           onPointerCancel={handleLookEnd}
+          onLostPointerCapture={handleLookEnd}
+          aria-label="Aim pad"
         >
           <div className="lookpad-reticle">
             <span className="reticle-dot" />
@@ -266,6 +297,8 @@ export function WashController({
             <button
               key={n.id}
               type="button"
+              aria-label={`Nozzle ${n.name}`}
+              aria-pressed={activeNozzle===i}
               className={`nozzle-btn ${activeNozzle === i ? 'active' : ''}`}
               style={{ borderColor: activeNozzle === i ? n.color : 'transparent' }}
               onClick={() => selectNozzle(i)}
@@ -293,6 +326,7 @@ export function WashController({
           <button
             type="button"
             className={`tool-action-btn toggle-spray-btn ${sprayToggle ? 'active' : ''}`}
+            aria-pressed={sprayToggle}
             onClick={() => {
               setSprayToggle(!sprayToggle);
               if (sprayToggle && isSpraying) {
@@ -309,12 +343,15 @@ export function WashController({
           <button
             type="button"
             className={`main-spray-btn ${isSpraying ? 'spraying' : ''}`}
+            aria-label="Spray"
+            aria-pressed={isSpraying}
             onPointerDown={handleSprayDown}
             onPointerUp={handleSprayUp}
             onPointerCancel={handleSprayUp}
+            onLostPointerCapture={handleSprayUp}
           >
             <span className="spray-icon">💧</span>
-            <b>{isSpraying ? 'SPRAYING' : 'HOLD SPRAY'}</b>
+            <b>{isSpraying ? 'SPRAYING' : 'SPRAY'}</b><small>{sprayToggle?'Tap on / off':'Hold to wash'}</small>
           </button>
         </div>
       </footer>

@@ -6,7 +6,7 @@ Powered by Poly Haven. These locally bundled assets are CC0 1.0:
 - Weathered Brown Planks: https://polyhaven.com/a/weathered_brown_planks
 - Brick Wall 001: https://polyhaven.com/a/brick_wall_001
 - Aerial Grass Rock: https://polyhaven.com/a/aerial_grass_rock (bundled as `lawn-*`)
-- Kloppenheim 02 Pure Sky: https://polyhaven.com/a/kloppenheim_02_puresky (bundled as `daylight.hdr`)
+- Kloofendal 48d Partly Cloudy Pure Sky: https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky (bundled as `daylight.hdr`)
 
 License: https://polyhaven.com/license
 

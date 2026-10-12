@@ -15,6 +15,7 @@ import {
 import { WashAudio } from './washAudio';
 import { WashController } from './washController';
 import { KartTouchControls } from './kartTouchControls';
+import {ControllerOrientation,controllerFullscreen} from './controllerOrientation';
 import './style.css';
 
 const GameScene = React.lazy(() => import('./scene').then(m => ({ default: m.GameScene })));
@@ -939,6 +940,8 @@ function App() {
         </main>
       )}
 
+      {isPhoneControllerOnly && room && <ControllerOrientation />}
+
       {/* GAMEPLAY: POWER WASH SIMULATOR 2 */}
       {room?.wash && room.wash.phase !== 'results' && (
         <main className={isPhoneControllerOnly ? 'controller-screen' : 'race-screen'}>
@@ -967,6 +970,7 @@ function App() {
                     spraying: washControls.current.spray,
                     nozzle: washControls.current.nozzle,
                   }}
+                  localInput={session?.playerId&&!me?.pairedControllerConnected?washControls:undefined}
                   onTargetObjectChange={(name, pct) => {
                     if (!name) {
                       setTargetedObject(null);
@@ -1224,77 +1228,12 @@ function App() {
 
       {/* GAMEPLAY: KART RUSH ARENA (PRESERVED) */}
       {room?.race && room.phase !== 'results' && (
-        <main className={isPhoneControllerOnly ? 'controller' : 'race-screen'}>
+        <main className={isPhoneControllerOnly ? 'controller kart-remote' : 'race-screen'}>
           {isPhoneControllerOnly ? (
             /* Kart Phone Gamepad */
             <>
-              <div className="controller-top">
-                <div>
-                  <span className="eyebrow">
-                    {room.code} · {me?.name}
-                  </span>
-                  <h2>You’re in the race</h2>
-                </div>
-                {statusPill}
-              </div>
-              <div className="gamepad">
-                <div className="steering">
-                  <button
-                    className="pad"
-                    onPointerDown={() => {
-                      kartControls.current.left = true;
-                      setInput(kartControls.current);
-                    }}
-                    onPointerUp={() => {
-                      kartControls.current.left = false;
-                      setInput(kartControls.current);
-                    }}
-                  >
-                    ◀ LEFT
-                  </button>
-                  <button
-                    className="pad"
-                    onPointerDown={() => {
-                      kartControls.current.right = true;
-                      setInput(kartControls.current);
-                    }}
-                    onPointerUp={() => {
-                      kartControls.current.right = false;
-                      setInput(kartControls.current);
-                    }}
-                  >
-                    RIGHT ▶
-                  </button>
-                </div>
-                <div className="pedals">
-                  <button
-                    className="pad brake"
-                    onPointerDown={() => {
-                      kartControls.current.brake = true;
-                      setInput(kartControls.current);
-                    }}
-                    onPointerUp={() => {
-                      kartControls.current.brake = false;
-                      setInput(kartControls.current);
-                    }}
-                  >
-                    BRAKE
-                  </button>
-                  <button
-                    className="pad gas"
-                    onPointerDown={() => {
-                      kartControls.current.gas = true;
-                      setInput(kartControls.current);
-                    }}
-                    onPointerUp={() => {
-                      kartControls.current.gas = false;
-                      setInput(kartControls.current);
-                    }}
-                  >
-                    GAS
-                  </button>
-                </div>
-              </div>
+              <div className="controller-top"><div><span className="eyebrow">{room.code} · {me?.name}</span><h2>Kart Rush</h2></div>{statusPill}<button className="remote-fullscreen" aria-label="Controller fullscreen" onClick={controllerFullscreen}>⛶</button></div>
+              <KartTouchControls remote onInput={value => {kartControls.current=value;setInput(value);}} />
             </>
           ) : (
             /* Kart 3D Screen */

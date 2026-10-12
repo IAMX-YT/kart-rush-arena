@@ -158,15 +158,22 @@ export function useNetwork() {
     const heartbeat = setInterval(() => {
       if (ws.current?.readyState === 1) {
         ws.current.send(JSON.stringify({ type: 'ping', sent: performance.now() }));
+      }
+    }, 1000);
+    let lastInputSent=0,lastInputPayload='';
+    const inputSender=setInterval(()=>{
+      if(ws.current?.readyState===1){
         if (saved.current?.playerId) {
+          let message:unknown;
           if (hasWashInput.current && currentRoom.current?.wash) {
-            ws.current.send(JSON.stringify({ type: 'wash_input', input: washInput.current }));
+            message={type:'wash_input',input:washInput.current};
           } else if (currentRoom.current?.race) {
-            ws.current.send(JSON.stringify({ type: 'input', input: input.current }));
+            message={type:'input',input:input.current};
           }
+          if(message){const payload=JSON.stringify(message),now=performance.now();if(payload!==lastInputPayload||now-lastInputSent>=100){ws.current.send(payload);lastInputPayload=payload;lastInputSent=now;}}
         }
       }
-    }, 100);
+    }, 33);
 
     return () => {
       disposed = true;
@@ -174,6 +181,7 @@ export function useNetwork() {
       clearTimeout(connectionTimeout);
       probe?.abort();
       clearInterval(heartbeat);
+      clearInterval(inputSender);
       ws.current?.close();
     };
   }, [connectionAttempt]);
@@ -191,19 +199,12 @@ export function useNetwork() {
 
   const setInput = (value: Input) => {
     hasWashInput.current = false;
-    const changed = (Object.keys(value) as (keyof Input)[]).some(k => value[k] !== input.current[k]);
-    input.current = value;
-    if (changed && saved.current?.playerId && ws.current?.readyState === 1) {
-      ws.current.send(JSON.stringify({ type: 'input', input: value }));
-    }
+    input.current = {...value};
   };
 
   const setWashInput = (value: WashInput) => {
     hasWashInput.current = true;
-    washInput.current = value;
-    if (saved.current?.playerId && currentRoom.current?.wash && ws.current?.readyState === 1) {
-      ws.current.send(JSON.stringify({ type: 'wash_input', input: value }));
-    }
+    washInput.current = {...value};
   };
 
   const requestSplit = (targetPlayerIds: string[]) => {

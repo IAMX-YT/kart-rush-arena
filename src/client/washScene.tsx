@@ -13,6 +13,7 @@ import {
   unpackDirtGrids,
   type PowerWashMatch,
   type WashPlayerState,
+  type WashInput,
 } from '../shared/powerwash';
 import { type RoomState } from '../shared/types';
 
@@ -23,6 +24,7 @@ interface WashSceneProps {
   quality?: string;
   onTargetObjectChange?: (objectName: string, percent: number) => void;
   localSprayState?: { spraying: boolean; nozzle: number };
+  localInput?:React.RefObject<WashInput>;
   onLook?: (deltaYaw: number, deltaPitch: number) => void;
   onSprayChange?: (spraying: boolean) => void;
   onNozzleCycle?: (delta: number) => void;
@@ -813,8 +815,9 @@ function buildFirstPersonWand(): THREE.Group {
   handle.position.set(0, -0.07, 0.02);
   handle.rotation.x = -0.25;
   wand.add(handle);
-  const housing=new THREE.Mesh(new RoundedBoxGeometry(.095,.092,.18,4,.02),new THREE.MeshStandardMaterial({color:'#c94330',roughness:.36,metalness:.12}));housing.position.set(0,.025,-.01);wand.add(housing);
-  for(let i=0;i<5;i++){const ridge=new THREE.Mesh(new THREE.BoxGeometry(.075,.004,.01),gripMat);ridge.position.set(0,.073,-.06+i*.024);wand.add(ridge);}
+  const housing=new THREE.Mesh(new RoundedBoxGeometry(.065,.058,.135,4,.017),new THREE.MeshStandardMaterial({color:'#b42e22',roughness:.42,metalness:.08}));housing.position.set(0,.015,-.04);wand.add(housing);
+  for(let i=0;i<4;i++){const ridge=new THREE.Mesh(new THREE.BoxGeometry(.045,.004,.012),gripMat);ridge.position.set(0,.046,-.083+i*.025);wand.add(ridge);}
+  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.023,.025,.075,16),gripMat);collar.rotation.x=Math.PI/2;collar.position.set(0,0,-.125);wand.add(collar);
   const gloveMat=new THREE.MeshStandardMaterial({color:'#d9a33c',roughness:.72});
   const hand=new THREE.Mesh(new RoundedBoxGeometry(.092,.12,.09,4,.025),gloveMat);hand.position.set(.025,-.105,.045);wand.add(hand);
   for(let i=0;i<4;i++){const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.012,.049,3,6),gloveMat);finger.rotation.z=Math.PI/2;finger.position.set(0,-.077-i*.021,-.011);wand.add(finger);}
@@ -1090,6 +1093,7 @@ export function PowerWashScene({
   quality = 'high',
   onTargetObjectChange,
   localSprayState,
+  localInput,
   onLook,
   onSprayChange,
   onNozzleCycle,
@@ -1097,6 +1101,8 @@ export function PowerWashScene({
   const mount = useRef<HTMLDivElement>(null);
   const latestRoom = useRef(room);
   latestRoom.current = room;
+  const latestControls=useRef({localSprayState,localInput,onTargetObjectChange});
+  latestControls.current={localSprayState,localInput,onTargetObjectChange};
 
   useEffect(() => {
     const parent = mount.current;
@@ -1110,11 +1116,13 @@ export function PowerWashScene({
       return;
     }
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, quality === 'high' ? 1.75 : 1));
+    const pixelRatio=Math.min(window.devicePixelRatio,quality==='high'?1.25:1);
+    renderer.setPixelRatio(pixelRatio);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     renderer.shadowMap.enabled = quality === 'high';
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.autoUpdate=false;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     parent.appendChild(renderer.domElement);
 
@@ -1123,8 +1131,8 @@ export function PowerWashScene({
     // Sky dome
     const sky = createSkyDome();
     scene.add(sky);
-    let environment:THREE.WebGLRenderTarget|undefined;const pmrem=new THREE.PMREMGenerator(renderer);let disposed=false;
-    new RGBELoader().load('/materials/daylight.hdr',hdr=>{if(disposed){hdr.dispose();return;}hdr.mapping=THREE.EquirectangularReflectionMapping;environment=pmrem.fromEquirectangular(hdr);scene.environment=environment.texture;scene.environmentIntensity=.65;hdr.dispose();},undefined,()=>{});
+    let environment:THREE.WebGLRenderTarget|undefined,daylightTexture:THREE.DataTexture|undefined;const pmrem=new THREE.PMREMGenerator(renderer);let disposed=false;
+    new RGBELoader().load('/materials/daylight.hdr',hdr=>{if(disposed){hdr.dispose();return;}hdr.mapping=THREE.EquirectangularReflectionMapping;environment=pmrem.fromEquirectangular(hdr);scene.environment=environment.texture;scene.environmentIntensity=.65;daylightTexture=hdr;scene.background=hdr;sky.visible=false;},undefined,()=>{});
 
     // Atmospheric fog
     scene.fog = new THREE.FogExp2('#c8dce8', 0.012);
@@ -1205,6 +1213,12 @@ export function PowerWashScene({
     const scenicCar = buildScenicCar(dirtSurfaces.get('car')!.texture);
 
     scene.add(house, driveway, bench, fence, bicycle, cart, birdbath, scenicCar);
+    // Soft ground contact stays visible on mobile without a full shadow pass.
+    const contactCanvas=document.createElement('canvas');contactCanvas.width=128;contactCanvas.height=128;
+    const contactContext=contactCanvas.getContext('2d')!;
+    const contactGradient=contactContext.createRadialGradient(64,64,12,64,64,64);contactGradient.addColorStop(0,'rgba(0,0,0,.4)');contactGradient.addColorStop(1,'rgba(0,0,0,0)');contactContext.fillStyle=contactGradient;contactContext.fillRect(0,0,128,128);
+    const contactTexture=new THREE.CanvasTexture(contactCanvas);
+    const contact=new THREE.Mesh(new THREE.PlaneGeometry(5.1,3.1),new THREE.MeshBasicMaterial({map:contactTexture,transparent:true,depthWrite:false}));contact.rotation.x=-Math.PI/2;contact.position.set(0,.12,-1);scene.add(contact);
     const draco=new DRACOLoader();draco.setDecoderPath('/models/draco/');
     const modelLoader=new GLTFLoader();modelLoader.setDRACOLoader(draco);
     modelLoader.load('/models/sports-car.glb',gltf=>{
@@ -1337,6 +1351,8 @@ export function PowerWashScene({
     let animId = 0;
     let lastTime = performance.now();
     let lastDirtUpdate = 0;
+    let lastShadowUpdate=0,lastTargetKey='';
+    const smoothPlayers=new Map<string,WashPlayerState>();
 
     function renderLoop(now: number) {
       animId = requestAnimationFrame(renderLoop);
@@ -1344,7 +1360,12 @@ export function PowerWashScene({
       lastTime = now;
 
       const wash = latestRoom.current.wash;
-      const players = wash?.players || [];
+      const rawPlayers=wash?.players||[];
+      const blend=1-Math.exp(-22*dt);
+      const players=rawPlayers.map(p=>{const previous=smoothPlayers.get(p.id);const smooth={...p};if(previous&&Math.hypot(p.x-previous.x,p.z-previous.z)<3){smooth.x=THREE.MathUtils.lerp(previous.x,p.x,blend);smooth.z=THREE.MathUtils.lerp(previous.z,p.z,blend);const angle=Math.atan2(Math.sin(p.yaw-previous.yaw),Math.cos(p.yaw-previous.yaw));smooth.yaw=previous.yaw+angle*blend;smooth.pitch=THREE.MathUtils.lerp(previous.pitch,p.pitch,blend);}smoothPlayers.set(p.id,smooth);return smooth;});
+      const local=latestControls.current.localInput?.current;
+      const localSprayState=local?{spraying:local.spray,nozzle:local.nozzle}:latestControls.current.localSprayState;
+      if(now-lastShadowUpdate>250){renderer.shadowMap.needsUpdate=true;lastShadowUpdate=now;}
 
       // Update dirt textures periodically
       if (wash && wash.packedGrids && now - lastDirtUpdate > 100) {
@@ -1382,8 +1403,10 @@ export function PowerWashScene({
 
       for (let i = 0; i < viewCount; i++) {
         const pId = activeViews[i];
-        const pState = players.find(p => p.id === pId) || players[0];
+        let pState = players.find(p => p.id === pId) || players[0];
         if (!pState) continue;
+        const immediate=latestControls.current.localInput?.current;
+        if(pId===follow&&immediate)pState={...pState,yaw:immediate.yaw,pitch:immediate.pitch};
 
         let cam = playerCameras.get(pId);
         if (!cam) {
@@ -1452,11 +1475,8 @@ export function PowerWashScene({
             }
           }
 
-          if (targetFound) {
-            onTargetObjectChange?.(targetFound.name, targetFound.percent);
-          } else {
-            onTargetObjectChange?.('', 0);
-          }
+          const targetKey=targetFound?targetFound.name+':'+targetFound.percent:'';
+          if(targetKey!==lastTargetKey){lastTargetKey=targetKey;latestControls.current.onTargetObjectChange?.(targetFound?.name||'',targetFound?.percent||0);}
         } else {
           fpWand.visible = false;
           const dist = 2.8;
