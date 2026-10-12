@@ -5,6 +5,11 @@
   "expiresAt": "2026-10-11T23:38:23.283Z",
   "commandId": "cmd_45d24ce1bf1f4e6c9b1527bd39cd",
   "projectId": "prj_hjedWVWN9lnyocpRHel43VJhuDuG",
+  "frontend": "https://rushroom-games.vercel.app",
+  "frontendDeploymentId": "dpl_Bkkty1gJWKNej95fWCVUMmWhxw63",
+  "sourceCommit": "ae85164",
+  "currentBackendHttpStatus": 410,
+  "verificationScope": "Published static assets and host role UI; local detailed-car cleaning and single-phone host gameplay. Multiplayer backend has expired. Health below is a historical pre-expiry sample.",
   "health": {
     "ok": true,
     "mode": "online",
