@@ -5,7 +5,7 @@ let credential;
 try{
  let stdin='';for await(const chunk of process.stdin)stdin+=chunk;credential=JSON.parse(stdin);stdin='';
  const files=[];async function collect(dir){for(const e of await fs.readdir(dir,{withFileTypes:true})){const file=dir+'/'+e.name;if(e.isDirectory())await collect(file);else files.push({file,data:(await fs.readFile(file)).toString('base64'),encoding:'base64'});}}
- for(const dir of ['src','public','tests'])await collect(dir);
+ for(const dir of ['src','api','public','tests'])await collect(dir);
  for(const file of ['package.json','pnpm-lock.yaml','pnpm-workspace.yaml','tsconfig.json','vite.config.ts','index.html','vercel.json'])files.push({file,data:(await fs.readFile(file)).toString('base64'),encoding:'base64'});
  // Upload larger bundles as individual content-addressed files; the deployment
  // JSON has a 10 MB request limit even when individual assets are much smaller.

@@ -4,6 +4,8 @@ Shared agent status and integration notes: [AGENT-HANDOFF.md](docs/AGENT-HANDOFF
 
 Original browser-based cooperative and competitive multiplayer platform: play on any phone, tablet, laptop, or shared TV screen with tactile phone controllers. Authoritative Node/WebSocket simulation. No login or office accounts needed.
 
+Live site: **https://rushroom-games.vercel.app**. The persistent backend runs on the authorized Cloudways VPS; Vercel provides public HTTPS/WSS through a restricted SSH relay. Deployment Actions run under `thatsego-account-manger/rushroom-deploy`, never IAMX-YT. See [PERMANENT-HOSTING.md](docs/PERMANENT-HOSTING.md) for operational details and restart/state limitations.
+
 ## Games in the Platform
 1. **Power Wash Simulator 2 (New)**: 3D cooperative pressure-washing game. Team up with friends to restore a sunlit garden courtyard (patio, bench, bicycle, garden cart, fence, and stone birdbath) to pristine glory. Features dynamic surface dirt removal, 4 swappable nozzles, dirt sonar highlights, simultaneous cleaning, and rewarding audio chimes.
 2. **Kart Rush Arena**: 3D racing game around Sunburst Circuit with drift mechanics, items, and multi-camera split-screen chase viewports.

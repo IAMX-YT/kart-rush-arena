@@ -2,17 +2,18 @@
   "framework": "vite",
   "buildCommand": "pnpm build",
   "outputDirectory": "dist",
+  "functions": {"api/ws.ts": {"maxDuration": 300}, "api/health.ts": {"maxDuration": 30}},
   "rewrites": [
     {
-      "source": "/api/config",
-      "destination": "https://sb-2cf1zfkzsyid.vercel.run/api/config"
+      "source": "/ws",
+      "destination": "/api/ws"
     },
     {
       "source": "/health",
-      "destination": "https://sb-2cf1zfkzsyid.vercel.run/health"
+      "destination": "/api/health"
     },
     {
-      "source": "/((?!assets/|art/|materials/|models/|wash-world.png|favicon.svg).*)",
+      "source": "/((?!api/|assets/|art/|materials/|models/|wash-world.png|favicon.svg).*)",
       "destination": "/index.html"
     }
   ]
