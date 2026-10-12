@@ -24,6 +24,7 @@ export function useNetwork() {
   const [status, setStatus] = useState('Connecting');
   const [error, setError] = useState('');
   const [latency, setLatency] = useState(0);
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [splitDecision, setSplitDecision] = useState<{
     requestId: string;
     accepted: boolean;
@@ -42,6 +43,9 @@ export function useNetwork() {
   useEffect(() => {
     let disposed = false;
     let retry: ReturnType<typeof setTimeout>;
+    let connectionTimeout: ReturnType<typeof setTimeout>;
+    let failures = 0;
+    let probe: AbortController | undefined;
 
     let retryDelay = 1500;
 
@@ -49,16 +53,41 @@ export function useNetwork() {
       saved.current = JSON.parse(sessionStorage.getItem('rush-session') || 'null');
     } catch {}
 
-    function connect() {
+    function unavailable(message = 'The multiplayer server is unavailable. Please try again later.') {
+      if (disposed) return;
+      setStatus('Server unavailable');
+      setError(message);
+    }
+
+    async function connect() {
       if (disposed) return;
       setStatus('Connecting');
+      probe = new AbortController();
+      // The same-origin health route is also reachable when the remote service
+      // has expired and its response no longer supplies CORS headers.
+      const currentProbe = probe;
+      const probeTimeout = setTimeout(() => currentProbe.abort(), 4000);
+      try {
+        const health = await fetch('/health', {signal: currentProbe.signal, cache:'no-store'});
+        if (health.status === 410) {
+          unavailable('The multiplayer server has stopped. Rooms cannot be created or joined until hosting is restored.');
+          return;
+        }
+      } catch {
+        // A failed health probe is not proof that WebSockets are unavailable.
+      } finally {clearTimeout(probeTimeout);}
+      if (disposed) return;
       const endpoint = new URL(SERVER_ORIGIN || location.origin);
       const socket = new WebSocket(`${endpoint.protocol === 'https:' ? 'wss' : 'ws'}://${endpoint.host}/ws`);
       ws.current = socket;
+      connectionTimeout = setTimeout(() => socket.close(), 8000);
 
       socket.onopen = () => {
+        clearTimeout(connectionTimeout);
+        failures = 0;
         retryDelay = 1500;
         setStatus('Connected');
+        setError('');
         if (saved.current) {
           socket.send(JSON.stringify({ ...saved.current, type: 'resume' }));
         } else if (pending.current) {
@@ -110,10 +139,13 @@ export function useNetwork() {
       };
 
       socket.onclose = e => {
+        clearTimeout(connectionTimeout);
+        if (disposed) return;
         input.current = neutral();
         hasWashInput.current = false;
         setStatus(e.code === 4001 ? 'Session opened elsewhere' : 'Reconnecting');
         if (e.code === 4001) return;
+        if (++failures >= 3) {unavailable();return;}
         retry = setTimeout(connect, retryDelay);
         retryDelay = Math.min(8000, Math.round(retryDelay * 1.5));
       };
@@ -139,12 +171,15 @@ export function useNetwork() {
     return () => {
       disposed = true;
       clearTimeout(retry);
+      clearTimeout(connectionTimeout);
+      probe?.abort();
       clearInterval(heartbeat);
       ws.current?.close();
     };
-  }, []);
+  }, [connectionAttempt]);
 
   const send = (message: unknown) => {
+    if (status === 'Server unavailable') return;
     setError('');
     if (ws.current?.readyState === 1) {
       ws.current.send(JSON.stringify(message));
@@ -205,5 +240,6 @@ export function useNetwork() {
     splitDecision,
     leave,
     samples,
+    reconnect: () => {setError('');setConnectionAttempt(n => n + 1);},
   };
 }

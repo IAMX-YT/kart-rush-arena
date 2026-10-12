@@ -460,13 +460,13 @@ function App() {
       {error && page !== 'home' && (
         <div className="error" role="alert">
           {error}
-          <button onClick={() => location.reload()}>Reconnect</button>
+          <button onClick={net.reconnect}>Retry connection</button>
         </div>
       )}
 
       {room && status !== 'Connected' && (
         <div className="network-banner">
-          {status} · Inputs released. Check server address and Wi-Fi.
+          {status} · Controls paused until the connection returns.
         </div>
       )}
 
@@ -710,9 +710,9 @@ function App() {
           <button
             className="primary full"
             disabled={!hostRoleChosen}
-            onClick={() => handleCreateRoom(selectedGameId)}
+            onClick={() => status === 'Server unavailable' ? net.reconnect() : handleCreateRoom(selectedGameId)}
           >
-            {status === 'Connected' ? 'Create room ↗' : 'Connecting to Server…'}
+            {status === 'Server unavailable' ? 'Retry server connection' : status === 'Connected' ? 'Create room ↗' : 'Connecting to Server…'}
           </button>
           {statusPill}
         </main>
@@ -727,7 +727,7 @@ function App() {
           <form
             onSubmit={e => {
               e.preventDefault();
-              handleJoinRoom();
+              if(status === 'Server unavailable')net.reconnect();else handleJoinRoom();
             }}
           >
             <label>
@@ -797,7 +797,7 @@ function App() {
             )}
 
             <button className="primary full" disabled={!joinDeviceRole}>
-              {status === 'Connected' ? 'Join Room ↗' : 'Connecting to Server…'}
+              {status === 'Server unavailable' ? 'Retry server connection' : status === 'Connected' ? 'Join Room ↗' : 'Connecting to Server…'}
             </button>
           </form>
           {statusPill}

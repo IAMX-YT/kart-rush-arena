@@ -90,3 +90,10 @@ The main public URL is `https://rushroom-games.vercel.app/`. `index.html` keeps 
 - The existing sandbox backend has expired (HTTP 410). No new temporary backend or GitHub Actions runner was created. Persistent/on-demand multiplayer hosting remains pending.
 - Published application source `daa1c25` as deployment `dpl_8btu1raep5HLn1f3N61XNFcN4JJ8` (READY), attached to `rushroom-games.vercel.app`. Public responsive-home/game-selection checks and the 390px required-host-role check passed. Changes pushed to `origin/main`. Retired kart-rush-arena and rushroom-split domains were not reattached.
 
+## Server-issue follow-up — October 12
+
+- Live probes confirmed HTTP 410 from both the old sandbox health route and `rushroom-games.vercel.app/health`. The issue is expired hosting, not the user's LAN/Wi-Fi.
+- The user chose a different VPS / Railway / Render and said they will provide details. Do not deploy Rushroom onto `145.223.33.135`. Permanent multiplayer deployment awaits the selected host/project and access.
+- Connection handling now checks same-origin health for an expired service before opening WebSockets, limits failed connection attempts to three, and exposes an explicit Retry action without reloading or losing device-role selection. Errors explain that rooms cannot be created/joined while hosting is stopped. This improves failure handling; it does not restore the server.
+- Build and 45/45 existing tests passed. `scripts/server-unavailable-test.mjs` passed in Chrome: HTTP 410 produces an actionable status, no WebSocket/retry storm, explicit Retry rechecks health, host device choice is preserved.
+
