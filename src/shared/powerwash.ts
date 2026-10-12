@@ -9,7 +9,7 @@ export interface CleanableDef {
 }
 
 export const CLEANABLE_OBJECTS: CleanableDef[] = [
-  {id:'car',name:'Classic Roadster',gridX:40,gridY:24,center:[0,1,-1],size:[4.4,2,2.2]},
+  {id:'car',name:'Sports Car',gridX:40,gridY:24,center:[0,.65,-1],size:[4.4,1.3,2.2]},
   { id: 'patio', name: 'Courtyard Patio', gridX: 32, gridY: 32, center: [0, 0, 0], size: [16, 0.2, 16] },
   { id: 'bench', name: 'Garden Bench', gridX: 16, gridY: 16, center: [3.5, 0.6, -3], size: [2.4, 1.2, 1.2] },
   { id: 'bicycle', name: 'Vintage Bicycle', gridX: 16, gridY: 16, center: [-3.8, 0.8, -2], size: [2.0, 1.4, 0.8] },

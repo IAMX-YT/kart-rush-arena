@@ -15,6 +15,7 @@ try {
  await page.getByRole('button',{name:'Screen + Controls',exact:false}).click();
  await page.locator('.panel button.primary').click();await page.getByRole('heading',{name:'Assemble your crew.'}).waitFor();
  await page.getByRole('button',{name:'Start Game',exact:false}).click();await page.locator('.wash-canvas canvas').waitFor();
+ await page.locator('.wash-canvas[data-vehicle="detailed"]').waitFor({timeout:30000});
  await page.waitForTimeout(3500);await fs.mkdir('test-results',{recursive:true});
  await page.screenshot({path:'test-results/wash-realism-dirty.png'});
  const before=page.room.wash.objects.car.cleanedCells;

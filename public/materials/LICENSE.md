@@ -10,4 +10,4 @@ Powered by Poly Haven. These locally bundled assets are CC0 1.0:
 
 License: https://polyhaven.com/license
 
-Only 1K JPG color/OpenGL normal/roughness maps and the 1K HDR environment are bundled. Discovery/download happened during development; no Poly Haven API is called by the game. Geometry, dirt textures, foliage, gun and game code are original. The supplied commercial-game screenshots are references and are not bundled.
+Only 1K JPG color/OpenGL normal/roughness maps and the 1K HDR environment are bundled. Discovery/download happened during development; no Poly Haven API is called by the game. Dirt textures, foliage, gun and game code are original. The detailed vehicle uses a separately attributed CC BY 4.0 model (see `../models/CREDITS.md`). The supplied commercial-game screenshots are references and are not bundled.

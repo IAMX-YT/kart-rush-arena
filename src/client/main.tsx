@@ -1468,6 +1468,7 @@ function App() {
         <footer>
           <span>rushroom — made for playing together.</span>
           <span>Original games. Instant co-op & rivalries.</span>
+          <a href="/models/CREDITS.md" target="_blank" rel="noreferrer">3D asset credits</a>
         </footer>
       )}
     </>

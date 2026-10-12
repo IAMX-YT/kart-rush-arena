@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import {RoundedBoxGeometry} from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {RGBELoader} from 'three/examples/jsm/loaders/RGBELoader.js';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js';
+import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader.js';
 import {detailedTree} from './washFoliage';
 import { splitLayout, splitViewport } from '../shared/display';
 import {
@@ -811,8 +813,8 @@ function buildFirstPersonWand(): THREE.Group {
   handle.position.set(0, -0.07, 0.02);
   handle.rotation.x = -0.25;
   wand.add(handle);
-  const housing=new THREE.Mesh(new RoundedBoxGeometry(.12,.13,.28,4,.025),new THREE.MeshStandardMaterial({color:'#c94330',roughness:.36,metalness:.12}));housing.position.set(0,.025,.055);wand.add(housing);
-  for(let i=0;i<5;i++){const ridge=new THREE.Mesh(new THREE.BoxGeometry(.085,.012,.016),gripMat);ridge.position.set(0,.094,-.03+i*.037);wand.add(ridge);}
+  const housing=new THREE.Mesh(new RoundedBoxGeometry(.095,.092,.18,4,.02),new THREE.MeshStandardMaterial({color:'#c94330',roughness:.36,metalness:.12}));housing.position.set(0,.025,-.01);wand.add(housing);
+  for(let i=0;i<5;i++){const ridge=new THREE.Mesh(new THREE.BoxGeometry(.075,.004,.01),gripMat);ridge.position.set(0,.073,-.06+i*.024);wand.add(ridge);}
   const gloveMat=new THREE.MeshStandardMaterial({color:'#d9a33c',roughness:.72});
   const hand=new THREE.Mesh(new RoundedBoxGeometry(.092,.12,.09,4,.025),gloveMat);hand.position.set(.025,-.105,.045);wand.add(hand);
   for(let i=0;i<4;i++){const finger=new THREE.Mesh(new THREE.CapsuleGeometry(.012,.049,3,6),gloveMat);finger.rotation.z=Math.PI/2;finger.position.set(0,-.077-i*.021,-.011);wand.add(finger);}
@@ -1099,6 +1101,7 @@ export function PowerWashScene({
   useEffect(() => {
     const parent = mount.current;
     if (!parent) return;
+    delete parent.dataset.vehicle;
 
     let renderer: THREE.WebGLRenderer;
     try {
@@ -1202,6 +1205,17 @@ export function PowerWashScene({
     const scenicCar = buildScenicCar(dirtSurfaces.get('car')!.texture);
 
     scene.add(house, driveway, bench, fence, bicycle, cart, birdbath, scenicCar);
+    const draco=new DRACOLoader();draco.setDecoderPath('/models/draco/');
+    const modelLoader=new GLTFLoader();modelLoader.setDRACOLoader(draco);
+    modelLoader.load('/models/sports-car.glb',gltf=>{
+      if(disposed)return;
+      const vehicle=gltf.scene;vehicle.updateMatrixWorld(true);let bounds=new THREE.Box3().setFromObject(vehicle);const size=bounds.getSize(new THREE.Vector3());
+      if(size.z>size.x)vehicle.rotation.y=Math.PI/2;
+      vehicle.scale.setScalar(4.2/Math.max(size.x,size.z));vehicle.updateMatrixWorld(true);bounds=new THREE.Box3().setFromObject(vehicle);const center=bounds.getCenter(new THREE.Vector3());
+      vehicle.position.set(-center.x,-bounds.min.y,-1-center.z);vehicle.updateMatrixWorld(true);
+      vehicle.traverse(object=>{if(object instanceof THREE.Mesh){const name=object.name.toLowerCase();if(name==='body')object.material=new THREE.MeshPhysicalMaterial({color:'#a92620',metalness:.65,roughness:.22,clearcoat:1,clearcoatRoughness:.12});}});
+      applySurfaceDirt(vehicle,dirtSurfaces.get('car')!.texture,'car');scenicCar.visible=false;scene.add(vehicle);parent.dataset.vehicle='detailed';
+    },undefined,()=>{parent.dataset.vehicle='fallback';});
 
     // ── Additional environment dressing ──
     // Mailbox
@@ -1508,6 +1522,7 @@ export function PowerWashScene({
 
     return () => {
       disposed=true;environment?.dispose();pmrem.dispose();if(scene.background instanceof THREE.Texture)scene.background.dispose();
+      draco.dispose();
       cancelAnimationFrame(animId);
       resizeObs.disconnect();
       parent.removeEventListener('pointerdown', handlePointerDown);

@@ -4,7 +4,7 @@ import {createPowerWashMatch,stepPowerWash,neutralWashInput} from '../src/shared
 
 test('a new solo host can clean the visible car from the starting view',()=>{
   const match=createPowerWashMatch([{id:'host',name:'Host',color:'#bef264'}]);match.phase='playing';
-  const player=match.players[0];const inputs=new Map([['host',{...neutralWashInput(),yaw:player.yaw,pitch:0,spray:true}]]);
+  const player=match.players[0];const inputs=new Map([['host',{...neutralWashInput(),yaw:player.yaw,pitch:player.pitch,spray:true}]]);
   for(let i=0;i<60;i++)stepPowerWash(match,inputs,1/60);
   assert(match.objects.car.cleanedCells>0,'Starting view and spray must hit the car');
   assert.equal(match.totalCleaned,Object.values(match.objects).reduce((sum,object)=>sum+object.cleanedCells,0));
